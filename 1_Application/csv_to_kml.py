@@ -12,7 +12,7 @@ kml = simplekml.Kml()
 
 inputfile = csv.reader(open(csv_path, "r"))
 for row in inputfile:
-    pnt = kml.newpoint(name="olten_brugg", coords=[(row[2], row[1])])
+    pnt = kml.newpoint(coords=[(row[2], row[1])])
     pnt.description = f"DateTime: {row[0]}, Temperatur: {row[3]}, Luftfeuchtigkeit: {row[4]}, "
     if float(row[3]) >= 25:
         pnt.style.iconstyle.color = simplekml.Color.orange
@@ -23,3 +23,4 @@ for row in inputfile:
 
 kml.save(str(script_dir / "olten-brugg.kml"))
 
+print(row[0], row[1], row[2])
