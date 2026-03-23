@@ -12,8 +12,8 @@ kml = simplekml.Kml()
 
 inputfile = csv.reader(open(csv_path, "r"))
 for row in inputfile:
-    kml.newpoint(name="olten_brugg", coords=[(row[1], row[2])])
-
+    pnt = kml.newpoint(name="olten_brugg", coords=[(row[1], row[2])])
+    pnt.description = f"DateTime: {row[0]}, Temperatur: {row[3]}, Luftfeuchtigkeit: {row[4]}, "
+    
 kml.save(str(script_dir / "olten-brugg.kml"))
 
-    
