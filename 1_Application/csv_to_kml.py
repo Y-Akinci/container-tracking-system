@@ -3,11 +3,9 @@ import csv
 from matplotlib import colors
 import simplekml
 
-# Zugriff auf die CSV-Datei im selben Verzeichnis wie das Skript
 script_dir = Path(__file__).parent
 csv_path = script_dir / "olten-brugg (2).csv"
 
-# Erstellen eines KML-Objekts
 kml = simplekml.Kml()
 inputfile = csv.reader(open(csv_path, "r"))
 
