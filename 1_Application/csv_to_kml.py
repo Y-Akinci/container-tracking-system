@@ -1,7 +1,7 @@
 from pathlib import Path
 import csv
-from matplotlib import colors
 import simplekml
+import webbrowser
 
 script_dir = Path(__file__).parent
 csv_path = script_dir / "olten-brugg (2).csv"
@@ -30,9 +30,9 @@ for row in inputfile:
         current_color = color
 
     current_coords.append((float(row[2]), float(row[1])))
- 
+
 segments.append((current_color, current_coords))
- 
+
 for i, (color, coords) in enumerate(segments):
     line = kml.newlinestring(name=f"Route_{i}", coords=coords)
     line.style.linestyle.width = 3
@@ -41,3 +41,5 @@ for i, (color, coords) in enumerate(segments):
 kml.save(str(script_dir / "olten-brugg.kml"))
 
 print(row[0], row[1], row[2])
+
+webbrowser.open("https://kmlviewer.nsspot.net/")
