@@ -9,12 +9,12 @@ csv_path = script_dir / "olten-brugg (2).csv"
 kml = simplekml.Kml()
 inputfile = csv.reader(open(csv_path, "r"))
 
-segments = []
-current_color = None
-current_coords = []
+segments = [] # Eine Liste welche die Teile der strecke mit den Farben Enthält, komplett
+current_color = None # Damit momentane farbe nichts ist, für den farbwechsel
+current_coords = [] # Es gruppiert die farben zusammen, im aufbau
 
-for row in inputfile:
-    if float(row[3]) >= 25 and float(row[4]) >= 80:
+for row in inputfile:# Werte muss in float umgewandelt werden, weil csv als string liest
+    if float(row[3]) >= 25 and float(row[4]) >= 80: 
         color = simplekml.Color.red
     elif float(row[3]) >= 25:
         color = simplekml.Color.orange
@@ -23,7 +23,7 @@ for row in inputfile:
     else:
         color = simplekml.Color.blue
 
-    if color != current_color:
+    if color != current_color: # Hat sich die Farbe im Vergleich zur vorherigen Zeile geändert?
         if current_coords:
             segments.append((current_color, current_coords))
             current_coords = [current_coords[-1]]
