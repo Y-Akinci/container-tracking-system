@@ -14,7 +14,6 @@ def get_color(temp, humidity):
     else:
         return simplekml.Color.blue
 
-
 def build_segments(csv_path):
     segments = []
     current_color = None
@@ -42,7 +41,6 @@ def build_segments(csv_path):
 
     return segments
 
-
 def save_kml(segments, output_path):
     kml = simplekml.Kml()
 
@@ -52,7 +50,6 @@ def save_kml(segments, output_path):
         line.style.linestyle.color = color
 
     kml.save(str(output_path))
-
 
 script_dir = Path(__file__).parent
 csv_path = script_dir / "olten-brugg (2).csv"
