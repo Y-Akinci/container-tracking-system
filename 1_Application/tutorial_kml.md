@@ -6,7 +6,7 @@
 
 ## Voraussetzungen
 
-Du bist Python Anfänger und solltest bereits sachen wie kennen:
+Du bist Python Anfänger und kennst sachen wie das:
 
 ```python
 if temp >= 25:
