@@ -1,24 +1,30 @@
 # Python Tutorial: GPS-Routen visualisieren mit KML
 
-Wir haben im Modul CDE1 ein Container-Tracking-System gebaut. GPS-Daten kommen als CSV-Datei an, wir lesen sie aus, bewerten Temperatur und Feuchtigkeit, und zeichnen die Route farbig auf einer Karte. Dieses Tutorial erklärt nicht nur was wir gemacht haben, sondern vor allem warum und wie du es selbst nachbauen kannst.
+Wir haben im Modul CDE1 ein Container-Tracking-System gebaut. GPS-Daten kommen als CSV-Datei an, wir lesen sie aus, bewerten Temperatur und Feuchtigkeit, und zeichnen die Route farbig auf einer Karte.
+
+So sieht das Endergebnis aus:
+
+> ![alt text](image.png)
+
+Dieses Tutorial erklärt nicht nur was wir gemacht haben, sondern vor allem warum und wie du es selbst nachbauen kannst.
+
+---
 
 ## Voraussetzungen
 
-Du solltest bereits wissen was das bedeutet:
+Bevor du beginnst, solltest du folgende Grundkenntnisse in Python mitbringen:
 
-```python
-if temp >= 25:
-    print("zu warm")
-elif temp >= 20:
-    print("okay")
-else:
-    print("kalt")
+- **Datentypen:** Du weisst was Strings, Floats, Listen und Booleans sind
+- **Bedingungen:** Du kennst `if`, `elif`, `else`
+- **Schleifen:** Du kannst mit `for` über eine Liste iterieren
+- **Funktionen:** Du weisst wie man eine Funktion mit `def` definiert und mit `return` einen Wert zurückgibt
+- **Ordnerstruktur:** Du weisst was ein Projektordner ist und wie Dateipfade funktionieren
 
-for row in data:
-    print(row)
-```
+---
 
-## Schritt 1: Virtuelle Umgebung mit venv
+## Vorbereitung: Virtuelle Umgebung mit venv
+
+Bevor wir mit dem eigentlichen Code beginnen, richten wir die Arbeitsumgebung ein. Das ist ein einmaliger Setup-Schritt für jedes neue Projekt.
 
 Wenn du einfach `pip install simplekml` ausführst, wird das Paket **global** installiert, also für den ganzen Computer. Das klingt praktisch, führt aber zu Problemen sobald du mehrere Projekte hast die verschiedene Versionen desselben Pakets brauchen. Python kann nicht zwei Versionen gleichzeitig global installiert haben.
 
@@ -65,9 +71,11 @@ Wer dein Projekt bekommt, kann mit einem einzigen Befehl exakt dieselbe Umgebung
 pip install -r requirements.txt
 ```
 
-Den Ordner `.venv` teilt man nicht, er kann aus `requirements.txt` jederzeit neu erstellt werden. Füge `.venv` in deine `.gitignore` ein wenn du Git verwendest.
+Den Ordner `.venv` teilst du nicht — er kann aus `requirements.txt` jederzeit neu erstellt werden. Füge `.venv` in deine `.gitignore` ein wenn du Git verwendest.
 
-## Schritt 2: Packages, was sie sind und wie man sie benutzt
+---
+
+## Schritt 1: Packages: Was sie sind und wie man sie benutzt
 
 Ein **Package** ist fertiger Code den andere geschrieben haben und den du in deinem Projekt verwenden kannst. Statt alles selbst zu programmieren, nutzt du was bereits existiert.
 
@@ -117,7 +125,9 @@ pfad = script_dir / "daten.csv"
 
 **`webbrowser`** ist in Python eingebaut und öffnet eine URL im Standardbrowser des Computers. Damit sehen wir das Resultat direkt nach dem Ausführen, ohne manuell in den Browser wechseln zu müssen.
 
-## Schritt 3: Die CSV-Datei verstehen
+---
+
+## Schritt 2: Die CSV-Datei verstehen
 
 Bevor wir Code schreiben, müssen wir wissen wie unsere Daten aussehen. Unsere CSV hat keine Header-Zeile, die Daten beginnen direkt in Zeile 1:
 
@@ -142,17 +152,32 @@ row[4]  # Feuchtigkeit -> "65.3"
 ### CSV öffnen mit `with open(...)`
 
 ```python
-with open(csv_path, "r", newline="") as f:
-    inputfile = csv.reader(f)
-    for row in inputfile:
-        print(row)  # ['2024-03-15 08:00:00', '47.3523', '7.9072', '22.1', '65.3']
+def read_csv(csv_path):
+    with open(csv_path, "r", newline="") as f:
+        inputfile = csv.reader(f)
+        rows = list(inputfile)
+        return rows
 ```
 
 Das `with`-Statement stellt sicher dass die Datei automatisch geschlossen wird, auch wenn ein Fehler passiert. Das ist sicherer als manuell `f.close()` aufzurufen.
 
 `newline=""` verhindert dass Python Zeilenumbrüche doppelt interpretiert. Das ist eine Empfehlung der offiziellen Python-Dokumentation für `csv.reader`.
 
-## Schritt 4: simplekml, wie man eine Kartenroute erstellt
+`list(inputfile)` wandelt den CSV-Reader in eine Liste um. Jede Zeile der CSV-Datei wird dabei selbst zu einer Liste von Strings — `rows` ist also eine **Liste von Listen**:
+
+```python
+[
+  ['2024-03-15 08:00:00', '47.3523', '7.9072', '22.1', '65.3'],
+  ['2024-03-15 08:00:10', '47.3541', '7.9089', '24.8', '72.1'],
+  ...
+]
+```
+
+Mit `row[3]` greifst du dann auf das vierte Element einer einzelnen Zeile zu.
+
+---
+
+## Schritt 3: simplekml: Wie man eine Kartenroute erstellt
 
 ### Das KML-Objekt erstellen
 
@@ -178,7 +203,7 @@ koordinaten = [
 linie = kml.newlinestring(name="Meine Route", coords=koordinaten)
 ```
 
-Achtung: KML erwartet die Koordinaten in der Reihenfolge **(longitude, latitude)**, also Längengrad zuerst, Breitengrad zweiter. Das ist das Gegenteil von dem was man intuitiv erwartet. Dieser Fehler ist uns beim ersten Versuch passiert, die Route war plötzlich irgendwo im Atlantik.
+Achtung: KML erwartet die Koordinaten in der Reihenfolge **(longitude, latitude)**, also Längengrad zuerst, Breitengrad zweiter. Das ist das Gegenteil von dem was man intuitiv erwartet. Dieser Fehler ist uns beim ersten Versuch passiert — die Route war plötzlich irgendwo im Atlantik.
 
 ### Farbe und Breite der Linie setzen
 
@@ -214,45 +239,9 @@ kml.save(str(script_dir / "olten-brugg.kml"))
 
 `kml.save()` erwartet einen String, deshalb `str(...)` um das `Path`-Objekt umzuwandeln.
 
-### Zeitstempel auf Punkte setzen (Bonus)
+---
 
-KML unterstützt Zeitstempel auf einzelnen Punkten. Das erlaubt es Viewern wie Google Earth, die Route als **Animation** abzuspielen. Man sieht wie der Container sich über die Zeit bewegt.
-
-```python
-punkt = kml.newpoint(name="Checkpoint", coords=[(7.9072, 47.3523)])
-punkt.timestamp.when = "2024-03-15T08:00:00"
-```
-
-Das Format muss ISO 8601 sein: `YYYY-MM-DDTHH:MM:SS`. Unsere CSV hat ein Leerzeichen zwischen Datum und Uhrzeit statt dem `T`, das lässt sich einfach korrigieren:
-
-```python
-raw = row[0]                 # "2024-03-15 08:00:00"
-iso = raw.replace(" ", "T")  # "2024-03-15T08:00:00"
-```
-
-Ein vollständiges Beispiel das für jeden GPS-Punkt einen Zeitstempel-Marker setzt:
-
-```python
-from pathlib import Path
-import csv
-import simplekml
-
-kml = simplekml.Kml()
-script_dir = Path(__file__).parent
-
-with open(script_dir / "olten-brugg (2).csv", "r", newline="") as f:
-    for row in csv.reader(f):
-        lon      = float(row[2])
-        lat      = float(row[1])
-        iso_time = row[0].replace(" ", "T")
-
-        punkt = kml.newpoint(coords=[(lon, lat)])
-        punkt.timestamp.when = iso_time
-
-kml.save(str(script_dir / "route_mit_zeit.kml"))
-```
-
-## Schritt 5: Farbige Segmente, das Herzstück
+## Schritt 4: Farbige Segmente: das Herzstück
 
 ### Warum Segmente und nicht einzelne Punkte?
 
@@ -279,29 +268,26 @@ Wir haben diese Logik in eine eigene Funktion ausgelagert damit wir sie isoliert
 ### Segmente aufbauen mit build_segments()
 
 ```python
-def build_segments(csv_path):
+def build_segments(rows):
     segments = []        # fertige Segmente: [(farbe, [koordinaten]), ...]
     current_color = None # aktuelle Farbe, zu Beginn noch keine
     current_coords = []  # Koordinaten des aktuellen Segments
 
-    with open(csv_path, "r", newline="") as f:
-        inputfile = csv.reader(f)
+    for row in rows:
+        temp     = float(row[3])
+        humidity = float(row[4])
+        color    = get_color(temp, humidity)
+        coord    = (float(row[2]), float(row[1]))  # (longitude, latitude)
 
-        for row in inputfile:
-            temp     = float(row[3])
-            humidity = float(row[4])
-            color    = get_color(temp, humidity)
-            coord    = (float(row[2]), float(row[1]))  # (longitude, latitude)
+        if color != current_color:          # Farbwechsel erkannt
+            if current_coords:              # Haben wir schon Punkte gesammelt?
+                segments.append((current_color, current_coords))
+                current_coords = [current_coords[-1]]  # letzten Punkt übernehmen
+            current_color = color
 
-            if color != current_color:          # Farbwechsel erkannt
-                if current_coords:              # Haben wir schon Punkte gesammelt?
-                    segments.append((current_color, current_coords))
-                    current_coords = [current_coords[-1]]  # letzten Punkt übernehmen
-                current_color = color
+        current_coords.append(coord)
 
-            current_coords.append(coord)
-
-    if current_coords:                          # letztes Segment nicht vergessen
+    if current_coords:                      # letztes Segment nicht vergessen
         segments.append((current_color, current_coords))
 
     return segments
@@ -311,12 +297,12 @@ def build_segments(csv_path):
 Wenn ein Segment endet und ein neues beginnt, übernehmen wir den letzten Punkt des alten Segments als ersten Punkt des neuen. Ohne das hätte die Route sichtbare Lücken an jedem Farbwechsel. `[-1]` ist der Python-Index für das letzte Element einer Liste.
 
 **Warum nochmals `append` nach der Schleife?**
-Die Schleife speichert ein Segment erst wenn die Farbe wechselt. Das allerletzte Segment wird nie durch einen Wechsel abgeschlossen, ohne die Zeile nach der Schleife würde das Ende der Route in der KML-Datei fehlen, ohne jede Fehlermeldung.
+Die Schleife speichert ein Segment erst wenn die Farbe wechselt. Das allerletzte Segment wird nie durch einen Wechsel abgeschlossen — ohne die Zeile nach der Schleife würde das Ende der Route in der KML-Datei fehlen, ohne jede Fehlermeldung.
 
 ### Segmente in KML schreiben mit save_kml()
 
 ```python
-def save_kml(segments, output_path):
+def save_kml(segments, kml_path):
     kml = simplekml.Kml()
 
     for i, (color, coords) in enumerate(segments):
@@ -324,14 +310,16 @@ def save_kml(segments, output_path):
         line.style.linestyle.width = 3
         line.style.linestyle.color = color
 
-    kml.save(str(output_path))
+    kml.save(str(kml_path))
 ```
 
 `enumerate(segments)` gibt uns gleichzeitig den Index `i` und den Wert `(color, coords)`, so können wir jede Linie eindeutig benennen (`Route_0`, `Route_1`, ...).
 
 Wir haben das Speichern in eine eigene Funktion ausgelagert damit `build_segments()` nichts davon wissen muss, dass am Ende eine KML-Datei entsteht. Die Trennung macht den Code austauschbar: willst du statt KML ein anderes Format, schreibst du einfach eine neue `save_`-Funktion und der Rest bleibt unverändert.
 
-## Schritt 6: Alles zusammensetzen
+---
+
+## Schritt 5: Alles zusammensetzen
 
 Der vollständige, lauffähige Code:
 
@@ -341,6 +329,15 @@ import csv
 import simplekml
 import webbrowser
 
+script_dir  = Path(__file__).parent
+csv_path    = script_dir / "olten-brugg (2).csv"
+kml_path = script_dir / "olten-brugg.kml"
+
+def read_csv(csv_path):
+    with open(csv_path, "r", newline="") as f:
+        inputfile = csv.reader(f)
+        rows = list(inputfile)
+        return rows
 
 def get_color(temp, humidity):
     if temp >= 25 and humidity >= 80:
@@ -352,34 +349,29 @@ def get_color(temp, humidity):
     else:
         return simplekml.Color.blue
 
-
-def build_segments(csv_path):
+def build_segments(rows):
     segments = []
     current_color = None
     current_coords = []
 
-    with open(csv_path, "r", newline="") as f:
-        inputfile = csv.reader(f)
+    for row in rows:
+        temp     = float(row[3])
+        humidity = float(row[4])
+        color    = get_color(temp, humidity)
+        coord    = (float(row[2]), float(row[1]))
 
-        for row in inputfile:
-            temp     = float(row[3])
-            humidity = float(row[4])
-            color    = get_color(temp, humidity)
-            coord    = (float(row[2]), float(row[1]))
+        if color != current_color:
+            if current_coords:
+                segments.append((current_color, current_coords))
+                current_coords = [current_coords[-1]]
+            current_color = color
 
-            if color != current_color:
-                if current_coords:
-                    segments.append((current_color, current_coords))
-                    current_coords = [current_coords[-1]]
-                current_color = color
-
-            current_coords.append(coord)
+        current_coords.append(coord)
 
     if current_coords:
         segments.append((current_color, current_coords))
 
     return segments
-
 
 def save_kml(segments, output_path):
     kml = simplekml.Kml()
@@ -389,24 +381,25 @@ def save_kml(segments, output_path):
         line.style.linestyle.width = 3
         line.style.linestyle.color = color
 
-    kml.save(str(output_path))
+    kml.save(str(kml_path))
 
+def main():
+    rows = read_csv(csv_path)
+    segments = build_segments(rows)
+    save_kml(segments, kml_path)
+    webbrowser.open("https://kmlviewer.nsspot.net/")
 
-# Pfade relativ zum Script-Ordner
-script_dir  = Path(__file__).parent
-csv_path    = script_dir / "olten-brugg (2).csv"
-output_path = script_dir / "olten-brugg.kml"
-
-# Ausführen
-segments = build_segments(csv_path)
-save_kml(segments, output_path)
-
-# Viewer im Browser öffnen
-webbrowser.open("https://kmlviewer.nsspot.net/")
+if __name__ == "__main__":
+    main()
 ```
 
-**Warum steht der ausführende Code am Ende?**
-In Python wird Code von oben nach unten gelesen. Würden wir `build_segments()` aufrufen bevor die Funktion definiert ist, stürzt Python ab. Deshalb erst alle Funktionen definieren, dann aufrufen.
+**Warum `main()` und `if __name__ == "__main__"`?**
+Der ausführende Code ist in eine `main()`-Funktion verpackt. Das ist Konvention und signalisiert: hier startet das Programm. `if __name__ == "__main__"` stellt sicher dass `main()` nur ausgeführt wird wenn die Datei direkt gestartet wird — nicht wenn sie von einer anderen Datei importiert wird.
+
+**Warum stehen die Pfade ganz oben, ausserhalb von `main()`?**
+`script_dir`, `csv_path` und `kml_path` sind globale Variablen — sie gelten für die ganze Datei. Da es sich um fixe Pfade handelt die sich nicht ändern, ist es übersichtlicher sie oben zu definieren statt sie durch mehrere Funktionen durchzureichen.
+
+---
 
 ## Klassische Fehler aus unserer eigenen Erfahrung
 
