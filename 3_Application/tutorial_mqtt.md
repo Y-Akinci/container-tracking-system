@@ -4,17 +4,26 @@ Wir haben im Modul CDE1 ein Container-Tracking-System gebaut. Für App 3 mussten
 
 ## Voraussetzungen
 
-Du solltest bereits wissen was das bedeutet:
+Du kennst bereits folgende Konzepte aus App 1:
 
-```python
-if temp >= 25:
-    print("zu warm")
+- Funktionen (`def`, `return`)
+- Listen und Dictionaries
+- `for`-Schleifen und `enumerate`
+- `if`, `elif`, `else`
+- `float()` für Typumwandlung
+- `pathlib` für Dateipfade
+- Die Logik von `get_color` und `build_segments`
+- HTTP-Requests mit `requests`
+- JSON als Datenformat
+- Interaktive Karten mit `folium`
+- Fehlerbehandlung mit `try/except`
 
-for row in data:
-    print(row)
+Neu in diesem Tutorial:
 
-def meine_funktion(wert):
-    return wert * 2
+- App 3 empfängt GPS-Daten live über MQTT statt aus einer fertigen Datei.
+- Der Simulator veröffentlicht JSON-Nachrichten an einen Broker, der Monitor abonniert die Topics.
+- Es erklärt paho-mqtt, die Topics migros/grp4/message und migros/grp4/state, sowie JSON-Parsing und Typumwandlung.
+- Wichtige Punkte sind WebSocket-Verbindung auf Port 9001 und typische Fehler wie falsches Topic oder fehlendes transport="websockets".
 ```
 
 ## Schritt 1: Was ist MQTT und warum haben wir es verwendet
