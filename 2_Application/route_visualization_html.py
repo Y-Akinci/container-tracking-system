@@ -5,23 +5,23 @@ import folium
 from pathlib import Path
 import webbrowser
 
-base_url = "https://fl-17-240.zhdk.cloud.switch.ch"
-script_dir = Path(__file__).parent
-html_path = script_dir / "karte.html"
+BASE_URL = "https://fl-17-240.zhdk.cloud.switch.ch"
+SCRIPT_DIR = Path(__file__).parent
+HTML_PATH = SCRIPT_DIR / "karte.html"
 
 # get all containers
-def fetch_containers(base_url):
-    response = requests.get(base_url + "/containers")
+def fetch_containers(BASE_URL):
+    response = requests.get(BASE_URL + "/containers")
     return response.json()
 
 # get all routes by container_id
-def fetch_routes(base_url, container_id):
-    response = requests.get(base_url + f"/containers/{container_id}/routes")
+def fetch_routes(BASE_URL, container_id):
+    response = requests.get(BASE_URL + f"/containers/{container_id}/routes")
     return response.json()
 
 # get csv by route_id and container_id
-def fetch_csv(base_url, container_id, route_id):
-    response = requests.get(base_url + f"/containers/{container_id}/routes/{route_id}")
+def fetch_csv(BASE_URL, container_id, route_id):
+    response = requests.get(BASE_URL + f"/containers/{container_id}/routes/{route_id}")
     rows = list(csv.reader(io.StringIO(response.text)))
     return rows
 
@@ -59,7 +59,7 @@ def build_segments(rows):
 
     return segments
 
-def save_html(segments, html_path):
+def save_html(segments, HTML_PATH):
     start = segments[0][1][0]
     karte = folium.Map(location=start, zoom_start=12)
     for color, coord in segments:
@@ -68,10 +68,10 @@ def save_html(segments, html_path):
                         weight=3
         ).add_to(karte)
 
-    karte.save(str(html_path))
+    karte.save(str(HTML_PATH))
 
 def select_container():
-    containers = fetch_containers(base_url)["containers"]
+    containers = fetch_containers(BASE_URL)["containers"]
     for i, container in enumerate(containers):
         print(f"{i+1}. {container}")
     while True:
@@ -86,7 +86,7 @@ def select_container():
     return container
 
 def select_route(container_id):
-    routes = fetch_routes(base_url, container_id)["routes"]
+    routes = fetch_routes(BASE_URL, container_id)["routes"]
     for i, route in enumerate(routes):
         print(f"{i+1}. {route}")
     while True:
@@ -103,10 +103,10 @@ def select_route(container_id):
 def main():
     container_id = select_container()
     route_id = select_route(container_id)
-    rows = fetch_csv(base_url, container_id, route_id)
+    rows = fetch_csv(BASE_URL, container_id, route_id)
     segments = build_segments(rows)
-    save_html(segments, html_path)
-    webbrowser.open(str(html_path))
+    save_html(segments, HTML_PATH)
+    webbrowser.open(str(HTML_PATH))
 
 if __name__ == "__main__":
     main()
