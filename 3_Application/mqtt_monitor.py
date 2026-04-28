@@ -48,4 +48,29 @@ def on_message(client, userdata, message): # Ein sogennater callback wenn der Br
     daten = parse_message(raw)
     print_update(daten)
 
+def on_connect(client, userdata, flags, rc, properties=None):
+    if rc == 0:
+        print(f"Verbunden mit {BROKER}")
+        print(f"Höre auf: {TOPIC_MSG}")
+        print("-" * 60)
+        client.subscribe(TOPIC_MSG)
+        client.subscribe(TOPIC_STATE)
+    else:
+        print(f"Verbindung fehlgeschlagen, Code: {rc}")
 
+client = mqtt.Client(
+    mqtt.CallbackAPIVersion.VERSION2,
+    protocol=mqtt.MQTTv5,
+    transport="websockets"
+)
+client.on_connect = on_connect
+client.on_message = on_message
+
+print("Verbinde...")
+client.connect(BROKER, PORT)
+
+try:
+    client.loop_forever()
+except KeyboardInterrupt:
+    print("Programm beendet.")
+    client.disconnect()
