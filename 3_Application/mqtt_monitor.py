@@ -9,7 +9,7 @@ TOPIC_STATE = "migros/grp4/state"
 TEMP_GRENZWERT     = 25
 HUMIDITY_GRENZWERT = 80
 
-
+# Hier kommen die Nachrichten als json an und werden zu Dictionary gemacht.
 def parse_message(raw):
     daten = json.loads(raw)
     return {
@@ -32,11 +32,11 @@ def get_status(temp, humidity):
         return "OK"
 
 
-def print_update(daten):
+def print_update(daten): # Hier werden die Daten formatiert ausgegeben, inklusive Statusmeldung.
     status = get_status(daten["temp"], daten["humidity"])
     print(f"[{daten['timestamp']}]  Temp: {daten['temp']}°C  Feuchtigkeit: {daten['humidity']}%  →  {status}")
 
-
+#
 def on_message(client, userdata, message):
     raw = message.payload.decode()
 
@@ -49,30 +49,3 @@ def on_message(client, userdata, message):
     print_update(daten)
 
 
-def on_connect(client, userdata, flags, rc, properties=None):
-    if rc == 0:
-        print(f"Verbunden mit {BROKER}")
-        print(f"Höre auf: {TOPIC_MSG}")
-        print("-" * 60)
-        client.subscribe(TOPIC_MSG)
-        client.subscribe(TOPIC_STATE)
-    else:
-        print(f"Verbindung fehlgeschlagen, Code: {rc}")
-
-
-client = mqtt.Client(
-    mqtt.CallbackAPIVersion.VERSION2,
-    protocol=mqtt.MQTTv5,
-    transport="websockets"
-)
-client.on_connect = on_connect
-client.on_message = on_message
-
-print("Verbinde...")
-client.connect(BROKER, PORT)
-
-try:
-    client.loop_forever()
-except KeyboardInterrupt:
-    print("\nProgramm beendet.")
-    client.disconnect()
