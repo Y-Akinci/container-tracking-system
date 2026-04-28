@@ -37,8 +37,8 @@ def print_update(daten): # Hier werden die Daten formatiert ausgegeben, inklusiv
     print(f"[{daten['timestamp']}]  Temp: {daten['temp']}°C  Feuchtigkeit: {daten['humidity']}%  →  {status}")
 
 #
-def on_message(client, userdata, message):
-    raw = message.payload.decode()
+def on_message(client, userdata, message): # Ein sogennater callback wenn der Broker eine Nachricht bekommen hat.
+    raw = message.payload.decode()# Hier kommen sie als Binär-format vor und werden entziffert
 
     if message.topic == TOPIC_STATE:
         info = json.loads(raw)
