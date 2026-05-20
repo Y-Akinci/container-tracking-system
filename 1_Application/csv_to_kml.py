@@ -1,4 +1,7 @@
 from pathlib import Path
+import sys
+sys.path.append(str(Path(__file__).parent.parent))
+from utils import build_segments
 import csv
 import simplekml
 import webbrowser
@@ -23,29 +26,6 @@ def get_color(temp, humidity):
     else:
         return simplekml.Color.blue
 
-def build_segments(rows):
-    segments = []
-    current_color = None
-    current_coords = []
-
-    for row in rows:
-        temp = float(row[3])
-        humidity = float(row[4])
-        color = get_color(temp, humidity)
-        coord = (float(row[2]), float(row[1]))
-
-        if color != current_color:
-            if current_coords:
-                segments.append((current_color, current_coords))
-                current_coords = [current_coords[-1]]
-            current_color = color
-
-        current_coords.append(coord)
-
-    if current_coords:
-        segments.append((current_color, current_coords))
-
-    return segments
 
 def save_kml(segments, KML_PATH):
     kml = simplekml.Kml()
@@ -59,7 +39,7 @@ def save_kml(segments, KML_PATH):
 
 def main():
     rows = read_csv(CSV_PATH)
-    segments = build_segments(rows)
+    segments = build_segments(rows, get_color)
     save_kml(segments, KML_PATH)
     webbrowser.open("https://kmlviewer.nsspot.net/")
 

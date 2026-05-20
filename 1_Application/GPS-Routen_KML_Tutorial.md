@@ -329,9 +329,9 @@ import csv
 import simplekml
 import webbrowser
 
-script_dir  = Path(__file__).parent
-csv_path    = script_dir / "olten-brugg (2).csv"
-kml_path = script_dir / "olten-brugg.kml"
+PT_DIR = Path(__file__).parent
+CSV_PATH = SCRIPT_DIR / "olten-brugg (2).csv"
+KML_PATH = SCRIPT_DIR / "olten-brugg.kml"
 
 def read_csv(csv_path):
     with open(csv_path, "r", newline="") as f:

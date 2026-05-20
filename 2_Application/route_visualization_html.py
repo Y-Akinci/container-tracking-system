@@ -2,7 +2,10 @@ import requests
 import io
 import csv
 import folium
+import sys
 from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent))
+from utils import build_segments
 import webbrowser
 
 BASE_URL = "https://fl-17-240.zhdk.cloud.switch.ch"
@@ -35,30 +38,6 @@ def get_color(temp, humidity):
     else:
         return "blue"
 
-def build_segments(rows):
-    segments = []
-    current_color = None
-    current_coords = []
-
-    for row in rows:
-        temp = float(row[3])
-        humidity = float(row[4])
-        color = get_color(temp, humidity)
-        coord = (float(row[1]), float(row[2]))
-
-        if color != current_color:
-            if current_coords:
-                segments.append((current_color, current_coords))
-                current_coords = [current_coords[-1]]
-            current_color = color
-
-        current_coords.append(coord)
-
-    if current_coords:
-        segments.append((current_color, current_coords))
-
-    return segments
-
 def save_html(segments, HTML_PATH):
     start = segments[0][1][0]
     karte = folium.Map(location=start, zoom_start=12)
@@ -77,6 +56,9 @@ def select_container():
     while True:
         try:
             container_choice = int(input("Please enter Container Number "))
+            if container_choice < 1:
+                print(f"Invalid choice. Please enter a number between 1 and {len(containers)}.")
+                continue
             container = containers[container_choice-1]
             break
         except ValueError:
@@ -92,6 +74,9 @@ def select_route(container_id):
     while True:
         try:
             route_choice = int(input("Please enter Route Number "))
+            if route_choice < 1:
+                print(f"Invalid choice. Please enter a number between 1 and {len(routes)}.")
+                continue
             route = routes[route_choice-1]
             break
         except ValueError:
@@ -104,7 +89,7 @@ def main():
     container_id = select_container()
     route_id = select_route(container_id)
     rows = fetch_csv(BASE_URL, container_id, route_id)
-    segments = build_segments(rows)
+    segments = build_segments(rows, get_color)
     save_html(segments, HTML_PATH)
     webbrowser.open(str(HTML_PATH))
 
