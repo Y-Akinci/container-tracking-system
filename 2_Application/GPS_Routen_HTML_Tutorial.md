@@ -37,8 +37,8 @@ Zwei neue Packages müssen installiert werden:
 pip install requests folium
 ```
 
-- **`requests`** — sendet HTTP-Anfragen an den Server
-- **`folium`** — erstellt interaktive Karten als HTML-Datei
+- **`requests`**, sendet HTTP-Anfragen an den Server
+- **`folium`**, erstellt interaktive Karten als HTML-Datei
 
 Die bekannten Packages `csv`, `io`, `pathlib` und `webbrowser` sind bereits in Python eingebaut.
 
@@ -56,7 +56,7 @@ GET /containers/{container_id}/routes              → alle Routen eines Contain
 GET /containers/{container_id}/routes/{route_id}   → CSV-Daten einer Route
 ```
 
-`{container_id}` und `{route_id}` sind Platzhalter — dort kommt der echte Wert rein, z.B. `frodo` oder `horw-luzern`.
+`{container_id}` und `{route_id}` sind Platzhalter, dort kommt der echte Wert rein, z.B. `frodo` oder `horw-luzern`.
 
 ### Was ist JSON?
 
@@ -70,11 +70,11 @@ Python kann JSON direkt in ein Dictionary umwandeln:
 
 ```python
 response = requests.get(url)
-data = response.json()         # String → Python Dictionary
+data = response.json()         # String -> Python Dictionary
 containers = data["containers"] # Zugriff auf den Schlüssel
 ```
 
-Der dritte Endpunkt gibt CSV-Text zurück — genau wie in App 1, nur als String statt als Datei.
+Der dritte Endpunkt gibt CSV-Text zurück, genau wie in App 1, nur als String statt als Datei.
 
 ---
 
@@ -109,14 +109,14 @@ def fetch_csv(base_url, container_id, route_id):
     return rows
 ```
 
-Hier kommt `io.StringIO` ins Spiel. `csv.reader` erwartet normalerweise eine Datei — aber wir haben nur einen String im Speicher. `io.StringIO` macht aus dem String eine **virtuelle Datei**, die `csv.reader` genau gleich lesen kann wie eine echte Datei:
+Hier kommt `io.StringIO` ins Spiel. `csv.reader` erwartet normalerweise eine Datei, aber wir haben nur einen String im Speicher. `io.StringIO` macht aus dem String eine **virtuelle Datei**, die `csv.reader` genau gleich lesen kann wie eine echte Datei:
 
 ```python
-# App 1 — echte Datei von der Festplatte
+# App 1: echte Datei von der Festplatte
 with open(csv_path) as f:
     rows = list(csv.reader(f))
 
-# App 2 — virtueller String vom Server
+# App 2_ virtueller String vom Server
 rows = list(csv.reader(io.StringIO(response.text)))
 ```
 
@@ -143,10 +143,10 @@ def get_color(temp, humidity):
 In `build_segments` ändert sich die Reihenfolge der Koordinaten. KML erwartete `(longitude, latitude)`, Folium erwartet `(latitude, longitude)`:
 
 ```python
-# App 1 — KML
+# App 1: KML
 coord = (float(row[2]), float(row[1]))  # longitude zuerst
 
-# App 2 — Folium
+# App 2: Folium
 coord = (float(row[1]), float(row[2]))  # latitude zuerst
 ```
 
@@ -175,20 +175,20 @@ def save_html(segments, html_path):
 
 Schritt für Schritt:
 
-**`segments[0][1][0]`** — greift auf die erste Koordinate der Route zu:
+**`segments[0][1][0]`**, greift auf die erste Koordinate der Route zu:
 ```python
-segments[0]       # erstes Segment → ("blue", [(lat1,lon1), (lat2,lon2)])
-segments[0][1]    # Koordinatenliste → [(lat1,lon1), (lat2,lon2)]
-segments[0][1][0] # erste Koordinate → (lat1, lon1)
+segments[0]       # erstes Segment -> ("blue", [(lat1,lon1), (lat2,lon2)])
+segments[0][1]    # Koordinatenliste -> [(lat1,lon1), (lat2,lon2)]
+segments[0][1][0] # erste Koordinate -> (lat1, lon1)
 ```
 
-**`folium.Map()`** — erstellt die Karte mit einem Startpunkt und Zoomstufe.
+**`folium.Map()`**, erstellt die Karte mit einem Startpunkt und Zoomstufe.
 
-**`folium.PolyLine()`** — zeichnet eine Linie auf die Karte. `locations` ist die Liste der Koordinaten, `color` die Farbe, `weight` die Liniendicke.
+**`folium.PolyLine()`**, zeichnet eine Linie auf die Karte. `locations` ist die Liste der Koordinaten, `color` die Farbe, `weight` die Liniendicke.
 
-**`.add_to(karte)`** — fügt die Linie zur Karte hinzu.
+**`.add_to(karte)`**, fügt die Linie zur Karte hinzu.
 
-**`karte.save()`** — speichert die fertige Karte als HTML-Datei.
+**`karte.save()`**, speichert die fertige Karte als HTML-Datei.
 
 ---
 
@@ -213,17 +213,17 @@ def select_container():
     return container
 ```
 
-**`while True`** — läuft so lange bis der Benutzer eine gültige Eingabe macht.
+**`while True`**: läuft so lange bis der Benutzer eine gültige Eingabe macht.
 
-**`try`** — versucht die Eingabe umzuwandeln und auf die Liste zuzugreifen.
+**`try`**: versucht die Eingabe umzuwandeln und auf die Liste zuzugreifen.
 
-**`except ValueError`** — wird ausgelöst wenn der Benutzer keine Zahl eingibt, z.B. `"abc"`.
+**`except ValueError`**: wird ausgelöst wenn der Benutzer keine Zahl eingibt, z.B. `"abc"`.
 
-**`except IndexError`** — wird ausgelöst wenn die Zahl ausserhalb der Liste liegt, z.B. `99` bei 4 Containern.
+**`except IndexError`**: wird ausgelöst wenn die Zahl ausserhalb der Liste liegt, z.B. `99` bei 4 Containern.
 
-**`break`** — beendet die Schleife sobald alles erfolgreich war.
+**`break`**: beendet die Schleife sobald alles erfolgreich war.
 
-Wichtig: `containers[container_choice - 1]` muss **innerhalb** von `try` stehen — sonst wird der `IndexError` nicht abgefangen. `-1` weil der Benutzer ab 1 zählt, Python aber ab 0.
+Wichtig: `containers[container_choice - 1]` muss **innerhalb** von `try` stehen, sonst wird der `IndexError` nicht abgefangen. `-1` weil der Benutzer ab 1 zählt, Python aber ab 0.
 
 `select_route` funktioniert identisch, nur mit Routen statt Containern.
 
@@ -241,9 +241,9 @@ import folium
 from pathlib import Path
 import webbrowser
 
-base_url = "https://fl-17-240.zhdk.cloud.switch.ch"
-script_dir = Path(__file__).parent
-html_path = script_dir / "karte.html"
+BASE_URL = "https://fl-17-240.zhdk.cloud.switch.ch"
+SCRIPT_DIR = Path(__file__).parent
+HTML_PATH = SCRIPT_DIR / "karte.html"
 
 def fetch_containers(base_url):
     response = requests.get(base_url + "/containers")
@@ -346,7 +346,7 @@ if __name__ == "__main__":
 ```
 
 **Warum ist `main()` so schlank?**
-Die Benutzerinteraktion ist in `select_container` und `select_route` ausgelagert. `main()` beschreibt nur den Ablauf auf hoher Ebene — jeder Schritt ist sofort lesbar ohne die Details zu kennen.
+Die Benutzerinteraktion ist in `select_container` und `select_route` ausgelagert. `main()` beschreibt nur den Ablauf auf hoher Ebene, jeder Schritt ist sofort lesbar ohne die Details zu kennen.
 
 ---
 
