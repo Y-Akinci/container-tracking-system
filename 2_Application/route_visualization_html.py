@@ -2,7 +2,10 @@ import requests
 import io
 import csv
 import folium
+import sys
 from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent))
+from utils import build_segments
 import webbrowser
 
 BASE_URL = "https://fl-17-240.zhdk.cloud.switch.ch"
@@ -34,30 +37,6 @@ def get_color(temp, humidity):
         return "yellow"
     else:
         return "blue"
-
-def build_segments(rows):
-    segments = []
-    current_color = None
-    current_coords = []
-
-    for row in rows:
-        temp = float(row[3])
-        humidity = float(row[4])
-        color = get_color(temp, humidity)
-        coord = (float(row[1]), float(row[2]))
-
-        if color != current_color:
-            if current_coords:
-                segments.append((current_color, current_coords))
-                current_coords = [current_coords[-1]]
-            current_color = color
-
-        current_coords.append(coord)
-
-    if current_coords:
-        segments.append((current_color, current_coords))
-
-    return segments
 
 def save_html(segments, HTML_PATH):
     start = segments[0][1][0]
@@ -104,7 +83,7 @@ def main():
     container_id = select_container()
     route_id = select_route(container_id)
     rows = fetch_csv(BASE_URL, container_id, route_id)
-    segments = build_segments(rows)
+    segments = build_segments(rows, get_color)
     save_html(segments, HTML_PATH)
     webbrowser.open(str(HTML_PATH))
 
