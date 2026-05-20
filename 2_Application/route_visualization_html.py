@@ -56,6 +56,9 @@ def select_container():
     while True:
         try:
             container_choice = int(input("Please enter Container Number "))
+            if container_choice < 1:
+                print(f"Invalid choice. Please enter a number between 1 and {len(containers)}.")
+                continue
             container = containers[container_choice-1]
             break
         except ValueError:
@@ -71,6 +74,9 @@ def select_route(container_id):
     while True:
         try:
             route_choice = int(input("Please enter Route Number "))
+            if route_choice < 1:
+                print(f"Invalid choice. Please enter a number between 1 and {len(routes)}.")
+                continue
             route = routes[route_choice-1]
             break
         except ValueError:
