@@ -1,10 +1,12 @@
 # Python Tutorial: GPS-Routen interaktiv visualisieren mit Folium
 
-Wir bauen eine Applikation die GPS-Daten von einem Server abruft und die Route auf einer interaktiven Karte im Browser anzeigt. Temperatur- und Feuchtigkeitsüberschreitungen werden farbig eingefärbt. Das Resultat ist eine HTML-Datei die direkt im Browser geöffnet wird.
-
-So sieht das Endergebnis aus:
+In dieser zweiten Applikation erweitern wir das bestehende Container-Tracking-System. Statt GPS-Daten aus einer lokalen CSV-Datei einzulesen, werden die Daten nun von einem Webserver abgerufen. Zusätzlich kann der Benutzer im Terminal auswählen, welcher Container und welche Route angezeigt werden sollen. Die Route wird anschliessend als interaktive HTML-Karte im Browser visualisiert.
 
 > ![alt text](image.png)
+
+**Lerninhalt:**
+1. Wie kommen Daten herein? — User Input im Terminal und Abruf von einem Webserver
+2. Wie visualisiert man die Route? — Interaktive HTML-Karte mit Folium
 
 ---
 
@@ -12,43 +14,53 @@ So sieht das Endergebnis aus:
 
 Du kennst bereits folgende Konzepte aus App 1:
 
-- Funktionen (`def`, `return`)
-- Listen und Dictionaries
-- `for`-Schleifen und `enumerate`
-- `if`, `elif`, `else`
-- `float()` für Typumwandlung
+- Funktionen (`def`, `return`), Listen, `for`-Schleifen, `if/elif/else`
+- `float()` für Typumwandlung aus CSV-Strings
 - `pathlib` für Dateipfade
-- Die Logik von `get_color` und `build_segments`
+- Packages importieren, virtuelle Umgebung einrichten
+- Die Logik von `get_color` und `build_segments` aus `utils.py`
 
 Neu in diesem Tutorial:
 
-- HTTP-Requests mit `requests`
+- HTTP-Requests: wie man Daten von einem Server abruft
 - JSON als Datenformat
-- Interaktive Karten mit `folium`
 - Fehlerbehandlung mit `try/except`
+- Interaktive Karten mit `folium` als HTML-Datei
 
 ---
 
-## Schritt 1: Packages installieren
-
-Zwei neue Packages müssen installiert werden:
+## Packages installieren
 
 ```bash
 pip install requests folium
+pip freeze > requirements.txt
 ```
 
-- **`requests`**, sendet HTTP-Anfragen an den Server
-- **`folium`**, erstellt interaktive Karten als HTML-Datei
-
-Die bekannten Packages `csv`, `io`, `pathlib` und `webbrowser` sind bereits in Python eingebaut.
+`csv`, `io`, `pathlib`, `webbrowser` und `sys` sind in Python eingebaut — kein `pip` nötig.
 
 ---
 
-## Schritt 2: Den Server verstehen
+## Konzepte
 
-Statt einer lokalen CSV-Datei kommen die Daten jetzt von einem Server. Der Server stellt eine API zur Verfügung — das ist eine Sammlung von URLs die verschiedene Daten zurückgeben.
+### HTTP und Webserver
 
-Die drei relevanten Endpunkte:
+Unsere Daten liegen nicht mehr als lokale CSV-Datei vor, sondern auf einem **Webserver**. Ein Webserver ist ein Programm das auf Anfragen wartet und Daten zurückschickt, genau wie ein Browser eine Webseite abruft, nur dass wir aus Python heraus fragen.
+
+Das Protokoll dahinter heisst **HTTP** (HyperText Transfer Protocol). Es beschreibt, wie Anfragen und Antworten aussehen. Die einfachste Anfrage ist `GET`: "gib mir die Daten unter dieser Adresse":
+
+```
+GET https://mein-server.ch/containers
+```
+
+In Python macht das Paket `requests` genau das:
+
+```python
+response = requests.get("https://mein-server.ch/containers")
+```
+
+`response` enthält die Antwort des Servers — entweder als Text (`response.text`) oder direkt als Python-Objekt (`response.json()`), je nachdem was der Server zurückschickt.
+
+Der Server stellt mehrere **Endpunkte** zur Verfügung. Das sind URLs, die verschiedene Daten zurückgeben:
 
 ```
 GET /containers                                    → alle Container
@@ -56,67 +68,106 @@ GET /containers/{container_id}/routes              → alle Routen eines Contain
 GET /containers/{container_id}/routes/{route_id}   → CSV-Daten einer Route
 ```
 
-`{container_id}` und `{route_id}` sind Platzhalter, dort kommt der echte Wert rein, z.B. `frodo` oder `horw-luzern`.
+`{container_id}` und `{route_id}` sind Platzhalter — dort kommt der echte Wert rein, z.B. `frodo` oder `horw-luzern`.
 
-### Was ist JSON?
+---
 
-Die ersten zwei Endpunkte geben kein CSV zurück, sondern **JSON**. JSON ist ein Text-Format das überall verwendet wird um strukturierte Daten zu übertragen. Es sieht aus wie Python, ist aber ein String:
+### JSON
+
+Die ersten zwei Endpunkte geben kein CSV zurück, sondern **JSON**. JSON ist ein Textformat das überall verwendet wird um strukturierte Daten zu übertragen. Es sieht aus wie Python, ist aber zunächst ein String:
 
 ```json
 {"containers": ["frodo", "gimli", "grp1", "grp2"]}
 ```
 
-Python kann JSON direkt in ein Dictionary umwandeln:
+`response.json()` wandelt diesen String automatisch in ein Python-Dictionary um:
 
 ```python
-response = requests.get(url)
-data = response.json()         # String -> Python Dictionary
+data = response.json()          # String -> Python Dictionary
 containers = data["containers"] # Zugriff auf den Schlüssel
 ```
 
-Der dritte Endpunkt gibt CSV-Text zurück, genau wie in App 1, nur als String statt als Datei.
+Der dritte Endpunkt gibt CSV-Text zurück. Dort verwenden wir `response.text`.
 
 ---
 
-## Schritt 3: Daten vom Server abrufen
+### HTML
 
-### Alle Container abrufen
+Statt einer KML-Datei erzeugt Folium eine **HTML-Datei**. HTML (HyperText Markup Language) ist das Format, das Browser verstehen um Inhalte darzustellen, wie beispielsweise Webseiten, aber auch lokale Dateien. Folium schreibt die Karte inklusive JavaScript in eine einzelne `.html`-Datei, die sich direkt im Browser öffnen lässt. Das Prinzip ist dasselbe wie bei KML: wir erzeugen eine Datei, ein Viewer zeigt sie an — nur dass der Viewer hier der Browser ist.
+
+---
+
+### Fehlerbehandlung mit try/except
+
+Wenn der Benutzer eine ungültige Eingabe macht, z.B. einen Buchstaben statt einer Zahl, oder eine Zahl ausserhalb der Liste, würde Python normalerweise mit einem Fehler abbrechen. Mit `try/except` fangen wir diese Fehler ab und können darauf reagieren:
 
 ```python
-def fetch_containers(base_url):
-    response = requests.get(base_url + "/containers")
-    return response.json()
+try:
+    zahl = int(input("Zahl eingeben: "))
+    wert = liste[zahl - 1]
+except ValueError:
+    print("Das war keine Zahl.")
+except IndexError:
+    print("Diese Nummer existiert nicht.")
 ```
 
-`response.json()` wandelt die Antwort automatisch in ein Python-Dictionary um. Der Schlüssel `"containers"` enthält die Liste der Containernamen.
+**`ValueError`** tritt auf wenn `int()` einen String bekommt den es nicht umwandeln kann, z.B. `"abc"`.
 
-### Alle Routen eines Containers abrufen
+**`IndexError`** tritt auf wenn der Index ausserhalb der Liste liegt, z.B. `99` bei 4 Einträgen.
+
+Wichtig: alles was einen Fehler auslösen kann muss **innerhalb** von `try` stehen. Der Zugriff auf die Liste (`liste[zahl - 1]`) muss also im selben `try`-Block sein wie `int()`, sonst greift `except IndexError` nicht.
+
+---
+
+## Schritt 1: Packages und Pfade einrichten
 
 ```python
-def fetch_routes(base_url, container_id):
-    response = requests.get(base_url + f"/containers/{container_id}/routes")
-    return response.json()
+import requests
+import io
+import csv
+import folium
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent))
+from utils import build_segments
+import webbrowser
+
+BASE_URL = "https://fl-17-240.zhdk.cloud.switch.ch"
+SCRIPT_DIR = Path(__file__).parent
+HTML_PATH = SCRIPT_DIR / "karte.html"
 ```
 
-Der f-String baut die URL dynamisch zusammen — `container_id` wird direkt in die URL eingesetzt.
+`BASE_URL` ist die Adresse des Servers. Alle Endpunkte werden mit f-Strings daran angehängt.
 
-### CSV-Daten einer Route abrufen
+---
+
+## Schritt 2: Daten vom Server abrufen
 
 ```python
-def fetch_csv(base_url, container_id, route_id):
-    response = requests.get(base_url + f"/containers/{container_id}/routes/{route_id}")
+def fetch_containers(BASE_URL):
+    response = requests.get(BASE_URL + "/containers")
+    return response.json()
+
+def fetch_routes(BASE_URL, container_id):
+    response = requests.get(BASE_URL + f"/containers/{container_id}/routes")
+    return response.json()
+
+def fetch_csv(BASE_URL, container_id, route_id):
+    response = requests.get(BASE_URL + f"/containers/{container_id}/routes/{route_id}")
     rows = list(csv.reader(io.StringIO(response.text)))
     return rows
 ```
 
-Hier kommt `io.StringIO` ins Spiel. `csv.reader` erwartet normalerweise eine Datei, aber wir haben nur einen String im Speicher. `io.StringIO` macht aus dem String eine **virtuelle Datei**, die `csv.reader` genau gleich lesen kann wie eine echte Datei:
+Die ersten zwei Funktionen geben JSON zurück — `response.json()` liefert direkt ein Dictionary. Die dritte gibt CSV-Text zurück — dort verwenden wir `response.text`.
+
+`io.StringIO` macht aus dem CSV-String eine virtuelle Datei, die `csv.reader` genau gleich lesen kann wie eine echte Datei:
 
 ```python
 # App 1: echte Datei von der Festplatte
 with open(csv_path) as f:
     rows = list(csv.reader(f))
 
-# App 2_ virtueller String vom Server
+# App 2: String vom Server
 rows = list(csv.reader(io.StringIO(response.text)))
 ```
 
@@ -124,9 +175,7 @@ Das Ergebnis — `rows` — ist in beiden Fällen identisch.
 
 ---
 
-## Schritt 4: Farben und Segmente
-
-`get_color` und `build_segments` sind fast identisch zu App 1. Der einzige Unterschied: statt `simplekml.Color.red` verwenden wir einfache Farb-Strings die Folium versteht:
+## Schritt 3: Farbe pro Messpunkt bestimmen
 
 ```python
 def get_color(temp, humidity):
@@ -140,222 +189,114 @@ def get_color(temp, humidity):
         return "blue"
 ```
 
-In `build_segments` ändert sich die Reihenfolge der Koordinaten. KML erwartete `(longitude, latitude)`, Folium erwartet `(latitude, longitude)`:
-
-```python
-# App 1: KML
-coord = (float(row[2]), float(row[1]))  # longitude zuerst
-
-# App 2: Folium
-coord = (float(row[1]), float(row[2]))  # latitude zuerst
-```
-
-Der Rest von `build_segments` bleibt unverändert — das ist der Vorteil von sauber getrennten Funktionen.
+Die Logik ist identisch zu App 1. Der einzige Unterschied: statt `simplekml.Color.red` verwenden wir einfache Farb-Strings, die Folium versteht. `build_segments` aus `utils.py` bleibt komplett unverändert.
 
 ---
 
-## Schritt 5: Interaktive Karte mit Folium
-
-Statt einer KML-Datei erstellen wir jetzt eine HTML-Datei mit einer interaktiven Karte.
+## Schritt 4: Benutzer wählt Container und Route
 
 ```python
-def save_html(segments, html_path):
-    start = segments[0][1][0]  # erste Koordinate der Route als Startpunkt
-    karte = folium.Map(location=start, zoom_start=11)
+def select_container():
+    containers = fetch_containers(BASE_URL)["containers"]
+    for i, container in enumerate(containers):
+        print(f"{i+1}. {container}")
+    while True:
+        try:
+            container_choice = int(input("Please enter Container Number "))
+            if container_choice < 1:
+                print(f"Invalid choice. Please enter a number between 1 and {len(containers)}.")
+                continue
+            container = containers[container_choice - 1]
+            break
+        except ValueError:
+            print("Invalid input. Please enter a valid number")
+        except IndexError:
+            print(f"Invalid choice. Please enter a number between 1 and {len(containers)}.")
+    return container
+```
 
-    for color, coords in segments:
+`while True` läuft so lange bis der Benutzer eine gültige Eingabe macht. `break` beendet die Schleife sobald alles erfolgreich war. `continue` springt direkt zum nächsten Schleifendurchlauf — damit wird eine negative Zahl abgefangen, bevor sie als Index verwendet wird.
+
+`containers[container_choice - 1]` steht innerhalb von `try`, damit `IndexError` abgefangen wird. `-1` weil der Benutzer ab 1 zählt, Python ab 0.
+
+`select_route` funktioniert identisch, nur mit Routen statt Containern.
+
+```python
+def select_route(container_id):
+    routes = fetch_routes(BASE_URL, container_id)["routes"]
+    for i, route in enumerate(routes):
+        print(f"{i+1}. {route}")
+    while True:
+        try:
+            route_choice = int(input("Please enter Route Number "))
+            if route_choice < 1:
+                print(f"Invalid choice. Please enter a number between 1 and {len(routes)}.")
+                continue
+            route = routes[route_choice-1]
+            break
+        except ValueError:
+            print("Invalid input. Please enter a valid number")
+        except IndexError:
+            print(f"Invalid choice. Please enter a number between 1 and {len(routes)}.")
+    return route
+```
+
+---
+
+## Schritt 5: Interaktive Karte erstellen
+
+```python
+def save_html(segments, HTML_PATH):
+    start = segments[0][1][0]
+    karte = folium.Map(location=start, zoom_start=12)
+    for color, coord in segments:
         folium.PolyLine(
-            locations=coords,
+            locations=coord,
             color=color,
             weight=3
         ).add_to(karte)
-
-    karte.save(str(html_path))
+    karte.save(str(HTML_PATH))
 ```
 
-Schritt für Schritt:
+**`segments[0][1][0]`** greift auf die erste Koordinate der Route zu — sie dient als Startpunkt der Karte:
 
-**`segments[0][1][0]`**, greift auf die erste Koordinate der Route zu:
 ```python
 segments[0]       # erstes Segment -> ("blue", [(lat1,lon1), (lat2,lon2)])
 segments[0][1]    # Koordinatenliste -> [(lat1,lon1), (lat2,lon2)]
 segments[0][1][0] # erste Koordinate -> (lat1, lon1)
 ```
 
-**`folium.Map()`**, erstellt die Karte mit einem Startpunkt und Zoomstufe.
+**`folium.Map()`** erstellt die Karte. **`folium.PolyLine()`** zeichnet eine Linie pro Segment. **`.add_to(karte)`** fügt sie zur Karte hinzu. **`karte.save()`** schreibt die fertige Karte als HTML-Datei.
 
-**`folium.PolyLine()`**, zeichnet eine Linie auf die Karte. `locations` ist die Liste der Koordinaten, `color` die Farbe, `weight` die Liniendicke.
-
-**`.add_to(karte)`**, fügt die Linie zur Karte hinzu.
-
-**`karte.save()`**, speichert die fertige Karte als HTML-Datei.
+Folium erwartet Koordinaten als `(latitude, longitude)` — das ist dieselbe Reihenfolge wie in `build_segments` in `utils.py`.
 
 ---
 
-## Schritt 6: Benutzerinteraktion
-
-Der Benutzer soll Container und Route interaktiv im Terminal wählen. Damit Fehleingaben das Programm nicht zum Absturz bringen, verwenden wir `try/except` in einer Schleife:
+## Schritt 6: Alles zusammensetzen
 
 ```python
-def select_container():
-    containers = fetch_containers(base_url)["containers"]
-    for i, container in enumerate(containers):
-        print(f"{i+1}. {container}")
-    while True:
-        try:
-            container_choice = int(input("Please enter Container Number "))
-            container = containers[container_choice - 1]
-            break
-        except ValueError:
-            print("Please enter a number")
-        except IndexError:
-            print(f"Please enter a number between 1 and {len(containers)}")
-    return container
-```
-
-**`while True`**: läuft so lange bis der Benutzer eine gültige Eingabe macht.
-
-**`try`**: versucht die Eingabe umzuwandeln und auf die Liste zuzugreifen.
-
-**`except ValueError`**: wird ausgelöst wenn der Benutzer keine Zahl eingibt, z.B. `"abc"`.
-
-**`except IndexError`**: wird ausgelöst wenn die Zahl ausserhalb der Liste liegt, z.B. `99` bei 4 Containern.
-
-**`break`**: beendet die Schleife sobald alles erfolgreich war.
-
-Wichtig: `containers[container_choice - 1]` muss **innerhalb** von `try` stehen, sonst wird der `IndexError` nicht abgefangen. `-1` weil der Benutzer ab 1 zählt, Python aber ab 0.
-
-`select_route` funktioniert identisch, nur mit Routen statt Containern.
-
----
-
-## Schritt 7: Alles zusammensetzen
-
-Der vollständige, lauffähige Code:
-
-```python
-import requests
-import io
-import csv
-import folium
-from pathlib import Path
-import webbrowser
-
-BASE_URL = "https://fl-17-240.zhdk.cloud.switch.ch"
-SCRIPT_DIR = Path(__file__).parent
-HTML_PATH = SCRIPT_DIR / "karte.html"
-
-def fetch_containers(base_url):
-    response = requests.get(base_url + "/containers")
-    return response.json()
-
-def fetch_routes(base_url, container_id):
-    response = requests.get(base_url + f"/containers/{container_id}/routes")
-    return response.json()
-
-def fetch_csv(base_url, container_id, route_id):
-    response = requests.get(base_url + f"/containers/{container_id}/routes/{route_id}")
-    rows = list(csv.reader(io.StringIO(response.text)))
-    return rows
-
-def get_color(temp, humidity):
-    if temp >= 25 and humidity >= 80:
-        return "red"
-    elif temp >= 25:
-        return "orange"
-    elif humidity >= 80:
-        return "yellow"
-    else:
-        return "blue"
-
-def build_segments(rows):
-    segments = []
-    current_color = None
-    current_coords = []
-
-    for row in rows:
-        temp = float(row[3])
-        humidity = float(row[4])
-        color = get_color(temp, humidity)
-        coord = (float(row[1]), float(row[2]))
-
-        if color != current_color:
-            if current_coords:
-                segments.append((current_color, current_coords))
-                current_coords = [current_coords[-1]]
-            current_color = color
-
-        current_coords.append(coord)
-
-    if current_coords:
-        segments.append((current_color, current_coords))
-
-    return segments
-
-def save_html(segments, html_path):
-    start = segments[0][1][0]
-    karte = folium.Map(location=start, zoom_start=11)
-    for color, coords in segments:
-        folium.PolyLine(
-            locations=coords,
-            color=color,
-            weight=3
-        ).add_to(karte)
-    karte.save(str(html_path))
-
-def select_container():
-    containers = fetch_containers(base_url)["containers"]
-    for i, container in enumerate(containers):
-        print(f"{i+1}. {container}")
-    while True:
-        try:
-            container_choice = int(input("Please enter Container Number "))
-            container = containers[container_choice - 1]
-            break
-        except ValueError:
-            print("Please enter a number")
-        except IndexError:
-            print(f"Please enter a number between 1 and {len(containers)}")
-    return container
-
-def select_route(container_id):
-    routes = fetch_routes(base_url, container_id)["routes"]
-    for i, route in enumerate(routes):
-        print(f"{i+1}. {route}")
-    while True:
-        try:
-            route_choice = int(input("Please enter Route Number "))
-            route = routes[route_choice - 1]
-            break
-        except ValueError:
-            print("Please enter a number")
-        except IndexError:
-            print(f"Please enter a number between 1 and {len(routes)}")
-    return route
-
 def main():
     container_id = select_container()
     route_id = select_route(container_id)
-    rows = fetch_csv(base_url, container_id, route_id)
-    segments = build_segments(rows)
-    save_html(segments, html_path)
-    webbrowser.open(str(html_path))
+    rows = fetch_csv(BASE_URL, container_id, route_id)
+    segments = build_segments(rows, get_color)
+    save_html(segments, HTML_PATH)
+    webbrowser.open(str(HTML_PATH))
 
 if __name__ == "__main__":
     main()
 ```
 
-**Warum ist `main()` so schlank?**
-Die Benutzerinteraktion ist in `select_container` und `select_route` ausgelagert. `main()` beschreibt nur den Ablauf auf hoher Ebene, jeder Schritt ist sofort lesbar ohne die Details zu kennen.
+`main()` beschreibt nur den Ablauf auf hoher Ebene. Jeder Schritt ist sofort lesbar ohne die Details zu kennen. `webbrowser.open` öffnet die fertige HTML-Datei direkt im Browser.
 
 ---
 
 ## Klassische Fehler
 
-**`IndexError` nicht abgefangen:** Wenn `containers[choice - 1]` ausserhalb von `try` steht, wird der Fehler nicht abgefangen — auch wenn `except IndexError` vorhanden ist. Der Zugriff auf die Liste muss innerhalb von `try` stehen.
+**`IndexError` nicht abgefangen:** Wenn `containers[choice - 1]` ausserhalb von `try` steht, greift `except IndexError` nicht, auch wenn es vorhanden ist. Der Zugriff auf die Liste muss innerhalb von `try` stehen.
 
-**Falsche Koordinatenreihenfolge:** Folium erwartet `(latitude, longitude)`, KML erwartet `(longitude, latitude)`. Ein falscher Wert und die Route erscheint irgendwo im Atlantik.
+**`response.json()` statt `response.text`:** Bei den ersten zwei Endpunkten kommt JSON zurück ->`response.json()` verwenden. Bei der CSV kommt Text zurück -> `response.text` verwenden. Verwechslung führt zu einem Fehler.
 
-**`response.json()` statt `response.text`:** Bei den ersten zwei Endpunkten kommt JSON zurück — dort `response.json()` verwenden. Bei der CSV kommt Text zurück — dort `response.text` verwenden. Verwechslung führt zu einem Fehler.
+**Dictionary-Schlüssel vergessen:** `response.json()` gibt ein Dictionary zurück, keine Liste. Ohne `["containers"]` bekommst du das ganze Dictionary statt der Liste der Container.
 
-**Dictionary-Schlüssel vergessen:** `response.json()` gibt ein Dictionary zurück, keine Liste. Ohne `["containers"]` bekommst du das ganze Dictionary statt der Liste.
+**Koordinatenreihenfolge:** Folium erwartet `(latitude, longitude)`. KML in App 1 erwartete `(longitude, latitude)`. `build_segments` in `utils.py` gibt `(latitude, longitude)` zurück — passt also direkt zu Folium.
