@@ -1,12 +1,12 @@
 # Python Tutorial: GPS-Routen visualisieren mit KML
 
-Wir haben im Modul CDE1 ein Container-Tracking-System gebaut. GPS-Daten kommen als CSV-Datei an, wir lesen sie aus, bewerten Temperatur und Feuchtigkeit, und zeichnen die Route farbig auf einer Karte.
-
-So sieht das Endergebnis aus:
+Im Rahmen von unserem Challenge-Modul CDE1 im Batchelor-Studiengang Data-Science & AI haben wir ein Container-Tracking-System gebaut. Wir haben GPS-Daten als CSV-Datei bekommen, diese ausgelesen, die Temperatur und Feuchtigkeit bewertet und die Route farbig auf einer Karte gezeichnet.
 
 > ![alt text](image.png)
 
-Dieses Tutorial erklärt nicht nur was wir gemacht haben, sondern vor allem warum und wie du es selbst nachbauen kannst.
+Für dieses Tutorial wurde folgender Lerninhalt definiert:
+
+**Lerninhalt:** Wie liest man strukturierte Sensordaten aus einer CSV-Datei aus, bewertet sie nach Kriterien (Temperatur, Luftfeuchtigkeit) und zeichnet die Route farbig auf einer Karte?
 
 ---
 
@@ -22,15 +22,15 @@ Bevor du beginnst, solltest du folgende Grundkenntnisse in Python mitbringen:
 
 ---
 
-## Vorbereitung: Virtuelle Umgebung mit venv
+## Konzepte
 
-Bevor wir mit dem eigentlichen Code beginnen, richten wir die Arbeitsumgebung ein. Das ist ein einmaliger Setup-Schritt für jedes neue Projekt.
+### Virtuelle Umgebung mit venv
 
-Wenn du einfach `pip install simplekml` ausführst, wird das Paket **global** installiert, also für den ganzen Computer. Das klingt praktisch, führt aber zu Problemen sobald du mehrere Projekte hast die verschiedene Versionen desselben Pakets brauchen. Python kann nicht zwei Versionen gleichzeitig global installiert haben.
+Bevor wir mit dem eigentlichen Code beginnen, richten wir die Arbeitsumgebung ein.
 
-Die Lösung ist eine **virtuelle Umgebung**. Das ist ein isolierter Python-Bereich nur für dein Projekt. Jedes Projekt hat seine eigenen Pakete in eigenen Versionen, kein Konflikt, kein Chaos.
+Wenn du einfach `pip install simplekml` ausführst, wird das Paket **global** installiert — für den ganzen Computer. Das klingt praktisch, führt aber zu Problemen sobald du mehrere Projekte hast, die verschiedene Versionen desselben Pakets brauchen. Python kann nicht zwei Versionen gleichzeitig global installiert haben.
 
-### Virtuelle Umgebung erstellen und aktivieren
+Die Lösung ist eine **virtuelle Umgebung**. Das ist ein isolierter Python-Bereich nur für dein Projekt. Jedes Projekt hat seine eigenen Pakete in eigenen Versionenm; kein Konflikt, kein Chaos.
 
 ```bash
 # Im Projektordner: virtuelle Umgebung erstellen
@@ -49,13 +49,10 @@ Du merkst dass die venv aktiv ist wenn `(.venv)` vor deiner Eingabe erscheint:
 (.venv) PS C:\mein-projekt>
 ```
 
-### Pakete installieren und festhalten
+Pakete installieren und festhalten:
 
 ```bash
-# Paket installieren (nur in der venv, nicht global)
 pip install simplekml
-
-# Alle installierten Pakete in eine Datei schreiben
 pip freeze > requirements.txt
 ```
 
@@ -65,21 +62,19 @@ Die `requirements.txt` sieht dann zum Beispiel so aus:
 simplekml==1.3.6
 ```
 
-Wer dein Projekt bekommt, kann mit einem einzigen Befehl exakt dieselbe Umgebung wiederherstellen:
+Wer das Tutorial bekommt, kann mit einem einzigen Befehl exakt dieselbe Umgebung wiederherstellen:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Den Ordner `.venv` teilst du nicht — er kann aus `requirements.txt` jederzeit neu erstellt werden. Füge `.venv` in deine `.gitignore` ein wenn du Git verwendest.
+Den Ordner `.venv` teilst du nicht. Er kann aus `requirements.txt` jederzeit neu erstellt werden. Füge `.venv` in deine `.gitignore` ein wenn du Git verwendest.
 
 ---
 
-## Schritt 1: Packages: Was sie sind und wie man sie benutzt
+### Packages
 
 Ein **Package** ist fertiger Code den andere geschrieben haben und den du in deinem Projekt verwenden kannst. Statt alles selbst zu programmieren, nutzt du was bereits existiert.
-
-### Wie man ein Package einbindet
 
 Oben in jeder Python-Datei stehen die `import`-Zeilen. Sie laden den Code des Packages in dein Script:
 
@@ -100,9 +95,9 @@ from pathlib import Path
 # Direkter Zugriff: Path(...), kürzer weil wir nur Path brauchen
 ```
 
-### Welche Packages wir verwenden und warum
+**Welche Packages wir verwenden und warum:**
 
-**`csv`** ist bereits in Python eingebaut, kein `pip install` nötig. Wir hätten auch `pandas` verwenden können, aber `pandas` ist ein grosses, komplexes Paket das für unseren Fall überdimensioniert wäre. Wir lesen eine Datei linear durch, dafür reicht `csv` vollständig.
+**`csv`** ist bereits in Python eingebaut. Wir hätten auch `pandas` verwenden können, aber `pandas` ist ein grosses, komplexes Paket das für unseren Fall überdimensioniert wäre. Wir lesen eine Datei linear durch. Dafür reicht `csv` vollständig.
 
 **`pathlib`** löst ein klassisches Problem mit Dateipfaden. Früher schrieb man Pfade als einfache Strings:
 
@@ -119,15 +114,29 @@ script_dir = Path(__file__).parent
 pfad = script_dir / "daten.csv"
 ```
 
-`__file__` ist eine eingebaute Variable die den absoluten Pfad der aktuellen Python-Datei enthält. `.parent` gibt den Ordner zurück in dem sie liegt. Der `/`-Operator bei `Path`-Objekten baut Pfade plattformunabhängig zusammen, kein Unterschied mehr zwischen Windows und Mac/Linux.
+`__file__` ist eine eingebaute Variable die den absoluten Pfad der aktuellen Python-Datei enthält. `.parent` gibt den Ordner zurück in dem sie liegt. Der `/`-Operator bei `Path`-Objekten baut Pfade plattformunabhängig zusammen — kein Unterschied mehr zwischen Windows und Mac/Linux.
 
-**`simplekml`** erzeugt KML-Dateien. KML ist ein XML-Format das Google Maps und viele andere Viewer verstehen. Wir hätten die KML-Datei von Hand als Text schreiben können, aber das wäre fehleranfällig und aufwändig. `simplekml` abstrahiert das weg.
+**`simplekml`** erzeugt KML-Dateien. **KML** (Keyhole Markup Language) ist ein XML-Format das Google Maps und viele andere Viewer verstehen, um geografische Daten wie Routen, Punkte und Flächen darzustellen. Wir hätten die KML-Datei von Hand als Text schreiben können, aber das wäre fehleranfällig und aufwändig. `simplekml` abstrahiert das weg.
 
-**`webbrowser`** ist in Python eingebaut und öffnet eine URL im Standardbrowser des Computers. Damit sehen wir das Resultat direkt nach dem Ausführen, ohne manuell in den Browser wechseln zu müssen.
+**`webbrowser`** ist in Python eingebaut und öffnet eine URL im Standardbrowser des Computers. 
 
 ---
 
-## Schritt 2: Die CSV-Datei verstehen
+### Eigener Code in utils.py
+
+Die Funktion `build_segments` liegt in einer gemeinsamen Datei `utils.py` im übergeordneten Ordner. Der Grund: dieselbe Logik wird in mehreren Projekten gebraucht. Damit Python sie findet, muss der übergeordnete Ordner zum Suchpfad hinzugefügt werden:
+
+```python
+import sys
+sys.path.append(str(Path(__file__).parent.parent))
+from utils import build_segments
+```
+
+`sys.path` ist die Liste der Ordner, in denen Python nach Modulen sucht. Mit `append` fügen wir den übergeordneten Ordner hinzu, bevor wir importieren.
+
+---
+
+## Schritt 1: CSV-Datei verstehen
 
 Bevor wir Code schreiben, müssen wir wissen wie unsere Daten aussehen. Unsere CSV hat keine Header-Zeile, die Daten beginnen direkt in Zeile 1:
 
@@ -149,7 +158,29 @@ row[4]  # Feuchtigkeit -> "65.3"
 
 `csv.reader` liest alles als **String**, auch Zahlen. `"22.1"` ist kein Zahlenwert, man kann damit nicht rechnen oder vergleichen. Deshalb müssen wir `float(row[3])` schreiben um den String in eine Dezimalzahl umzuwandeln.
 
-### CSV öffnen mit `with open(...)`
+---
+
+## Schritt 2: Packages und Pfade einrichten
+
+```python
+from pathlib import Path
+import sys
+sys.path.append(str(Path(__file__).parent.parent))
+from utils import build_segments
+import csv
+import simplekml
+import webbrowser
+
+SCRIPT_DIR = Path(__file__).parent
+CSV_PATH = SCRIPT_DIR / "olten-brugg (2).csv"
+KML_PATH = SCRIPT_DIR / "olten-brugg.kml"
+```
+
+Die Pfade stehen als globale Variablen ganz oben, weil sie sich nicht ändern und von mehreren Funktionen gebraucht werden.
+
+---
+
+## Schritt 3: CSV einlesen
 
 ```python
 def read_csv(csv_path):
@@ -173,81 +204,9 @@ Das `with`-Statement stellt sicher dass die Datei automatisch geschlossen wird, 
 ]
 ```
 
-Mit `row[3]` greifst du dann auf das vierte Element einer einzelnen Zeile zu.
-
 ---
 
-## Schritt 3: simplekml: Wie man eine Kartenroute erstellt
-
-### Das KML-Objekt erstellen
-
-Alles beginnt mit einem `Kml()`-Objekt. Es ist der Container für alles was wir in die Datei schreiben wollen:
-
-```python
-import simplekml
-
-kml = simplekml.Kml()
-```
-
-### Eine Linie zeichnen
-
-Eine Linie in KML heisst `LineString`. Mit `simplekml` erstellt man sie so:
-
-```python
-koordinaten = [
-    (7.9072, 47.3523),  # (longitude, latitude), Reihenfolge beachten!
-    (7.9089, 47.3541),
-    (7.9103, 47.3558),
-]
-
-linie = kml.newlinestring(name="Meine Route", coords=koordinaten)
-```
-
-Achtung: KML erwartet die Koordinaten in der Reihenfolge **(longitude, latitude)**, also Längengrad zuerst, Breitengrad zweiter. Das ist das Gegenteil von dem was man intuitiv erwartet. Dieser Fehler ist uns beim ersten Versuch passiert — die Route war plötzlich irgendwo im Atlantik.
-
-### Farbe und Breite der Linie setzen
-
-```python
-linie.style.linestyle.width = 3
-linie.style.linestyle.color = simplekml.Color.red
-```
-
-Verfügbare Farben in `simplekml`:
-
-```python
-simplekml.Color.red
-simplekml.Color.orange
-simplekml.Color.yellow
-simplekml.Color.blue
-simplekml.Color.green
-simplekml.Color.white
-simplekml.Color.black
-```
-
-### Die Datei speichern
-
-```python
-kml.save("olten-brugg.kml")
-```
-
-Mit `pathlib` damit die Datei immer im richtigen Ordner landet:
-
-```python
-script_dir = Path(__file__).parent
-kml.save(str(script_dir / "olten-brugg.kml"))
-```
-
-`kml.save()` erwartet einen String, deshalb `str(...)` um das `Path`-Objekt umzuwandeln.
-
----
-
-## Schritt 4: Farbige Segmente: das Herzstück
-
-### Warum Segmente und nicht einzelne Punkte?
-
-Der naive Ansatz wäre, jeden GPS-Punkt als eigene Linie zu zeichnen. Das erzeugt hunderte kleine Einzellinien und ist ineffizient. Unser Ansatz: Solange aufeinanderfolgende Punkte dieselbe Farbe haben, sammeln wir sie in einem Segment. Erst wenn die Farbe wechselt, beginnt ein neues Segment.
-
-### Farbe bestimmen mit get_color()
+## Schritt 4: Farbe pro Messpunkt bestimmen
 
 ```python
 def get_color(temp, humidity):
@@ -263,12 +222,20 @@ def get_color(temp, humidity):
 
 Das `and` in der ersten Bedingung ist entscheidend: Nur wenn beide Kriterien zutreffen, wird es Rot. `elif` stellt sicher dass immer genau eine Farbe gewählt wird. Die erste zutreffende Bedingung gewinnt, der Rest wird übersprungen.
 
-Wir haben diese Logik in eine eigene Funktion ausgelagert damit wir sie isoliert testen können. `get_color(30, 90)` sollte Rot zurückgeben. Das macht die Hauptlogik ausserdem übersichtlicher.
+Diese Logik ist in eine eigene Funktion ausgelagert damit sie isoliert testbar ist. `get_color(30, 90)` sollte Rot zurückgeben. Ausserdem macht es die Hauptlogik übersichtlicher — und `build_segments` in `utils.py` kann sie als Parameter entgegennehmen, ohne selbst zu wissen, wie Farben bestimmt werden.
 
-### Segmente aufbauen mit build_segments()
+---
+
+## Schritt 5: Farbige Segmente aufbauen
+
+### Warum Segmente und nicht einzelne Punkte?
+
+Der naive Ansatz wäre, jeden GPS-Punkt als eigene Linie zu zeichnen. Das erzeugt hunderte kleine Einzellinien und ist ineffizient. Unser Ansatz: Solange aufeinanderfolgende Punkte dieselbe Farbe haben, sammeln wir sie in einem Segment. Erst wenn die Farbe wechselt, beginnt ein neues Segment.
+
+Diese Logik liegt in `utils.py` und wird mit `get_color` als Parameter aufgerufen:
 
 ```python
-def build_segments(rows):
+def build_segments(rows, get_color):
     segments = []        # fertige Segmente: [(farbe, [koordinaten]), ...]
     current_color = None # aktuelle Farbe, zu Beginn noch keine
     current_coords = []  # Koordinaten des aktuellen Segments
@@ -277,7 +244,7 @@ def build_segments(rows):
         temp     = float(row[3])
         humidity = float(row[4])
         color    = get_color(temp, humidity)
-        coord    = (float(row[2]), float(row[1]))  # (longitude, latitude)
+        coord    = (float(row[1]), float(row[2]))  # (latitude, longitude)
 
         if color != current_color:          # Farbwechsel erkannt
             if current_coords:              # Haben wir schon Punkte gesammelt?
@@ -299,7 +266,9 @@ Wenn ein Segment endet und ein neues beginnt, übernehmen wir den letzten Punkt 
 **Warum nochmals `append` nach der Schleife?**
 Die Schleife speichert ein Segment erst wenn die Farbe wechselt. Das allerletzte Segment wird nie durch einen Wechsel abgeschlossen — ohne die Zeile nach der Schleife würde das Ende der Route in der KML-Datei fehlen, ohne jede Fehlermeldung.
 
-### Segmente in KML schreiben mit save_kml()
+---
+
+## Schritt 6: Segmente als KML speichern
 
 ```python
 def save_kml(segments, kml_path):
@@ -313,100 +282,37 @@ def save_kml(segments, kml_path):
     kml.save(str(kml_path))
 ```
 
-`enumerate(segments)` gibt uns gleichzeitig den Index `i` und den Wert `(color, coords)`, so können wir jede Linie eindeutig benennen (`Route_0`, `Route_1`, ...).
+`simplekml.Kml()` ist der Container für alles in der Datei. Eine Linie in KML heisst `LineString` — `newlinestring` erzeugt sie. `enumerate(segments)` gibt gleichzeitig den Index `i` und den Wert `(color, coords)`, so bekommt jede Linie einen eindeutigen Namen (`Route_0`, `Route_1`, ...).
 
-Wir haben das Speichern in eine eigene Funktion ausgelagert damit `build_segments()` nichts davon wissen muss, dass am Ende eine KML-Datei entsteht. Die Trennung macht den Code austauschbar: willst du statt KML ein anderes Format, schreibst du einfach eine neue `save_`-Funktion und der Rest bleibt unverändert.
+`kml.save()` erwartet einen String, deshalb `str(kml_path)` um das `Path`-Objekt umzuwandeln.
+
+`save_kml` weiss nichts von `build_segments` — und umgekehrt. Diese Trennung macht den Code austauschbar: willst du statt KML ein anderes Format, schreibst du einfach eine neue `save_`-Funktion und der Rest bleibt unverändert.
 
 ---
 
-## Schritt 5: Alles zusammensetzen
-
-Der vollständige, lauffähige Code:
+## Schritt 7: Alles zusammensetzen
 
 ```python
-from pathlib import Path
-import csv
-import simplekml
-import webbrowser
-
-PT_DIR = Path(__file__).parent
-CSV_PATH = SCRIPT_DIR / "olten-brugg (2).csv"
-KML_PATH = SCRIPT_DIR / "olten-brugg.kml"
-
-def read_csv(csv_path):
-    with open(csv_path, "r", newline="") as f:
-        inputfile = csv.reader(f)
-        rows = list(inputfile)
-        return rows
-
-def get_color(temp, humidity):
-    if temp >= 25 and humidity >= 80:
-        return simplekml.Color.red
-    elif temp >= 25:
-        return simplekml.Color.orange
-    elif humidity >= 80:
-        return simplekml.Color.yellow
-    else:
-        return simplekml.Color.blue
-
-def build_segments(rows):
-    segments = []
-    current_color = None
-    current_coords = []
-
-    for row in rows:
-        temp     = float(row[3])
-        humidity = float(row[4])
-        color    = get_color(temp, humidity)
-        coord    = (float(row[2]), float(row[1]))
-
-        if color != current_color:
-            if current_coords:
-                segments.append((current_color, current_coords))
-                current_coords = [current_coords[-1]]
-            current_color = color
-
-        current_coords.append(coord)
-
-    if current_coords:
-        segments.append((current_color, current_coords))
-
-    return segments
-
-def save_kml(segments, output_path):
-    kml = simplekml.Kml()
-
-    for i, (color, coords) in enumerate(segments):
-        line = kml.newlinestring(name=f"Route_{i}", coords=coords)
-        line.style.linestyle.width = 3
-        line.style.linestyle.color = color
-
-    kml.save(str(kml_path))
-
 def main():
-    rows = read_csv(csv_path)
-    segments = build_segments(rows)
-    save_kml(segments, kml_path)
+    rows = read_csv(CSV_PATH)
+    segments = build_segments(rows, get_color)
+    save_kml(segments, KML_PATH)
     webbrowser.open("https://kmlviewer.nsspot.net/")
 
 if __name__ == "__main__":
     main()
 ```
 
-**Warum `main()` und `if __name__ == "__main__"`?**
-Der ausführende Code ist in eine `main()`-Funktion verpackt. Das ist Konvention und signalisiert: hier startet das Programm. `if __name__ == "__main__"` stellt sicher dass `main()` nur ausgeführt wird wenn die Datei direkt gestartet wird — nicht wenn sie von einer anderen Datei importiert wird.
-
-**Warum stehen die Pfade ganz oben, ausserhalb von `main()`?**
-`script_dir`, `csv_path` und `kml_path` sind globale Variablen — sie gelten für die ganze Datei. Da es sich um fixe Pfade handelt die sich nicht ändern, ist es übersichtlicher sie oben zu definieren statt sie durch mehrere Funktionen durchzureichen.
+`main()` ist Konvention und signalisiert: hier startet das Programm. `if __name__ == "__main__"` stellt sicher dass `main()` nur ausgeführt wird wenn die Datei direkt gestartet wird, nicht wenn sie von einer anderen Datei importiert wird.
 
 ---
 
-## Klassische Fehler aus unserer eigenen Erfahrung
+## Klassische Fehler
 
 **Falscher Spalten-Index:** Unsere CSV hat keine Header-Zeile. Wenn du den falschen Index verwendest bekommst du falsche Werte ohne Fehlermeldung. Python stürzt nicht ab, du bekommst einfach falsche Farben auf der Karte. Immer zuerst die CSV-Struktur prüfen bevor du Indizes verwendest.
 
-**Letztes Segment vergessen:** Die Schleife endet, aber das letzte Segment wurde noch nicht gespeichert. Ohne `if current_coords: segments.append(...)` nach der Schleife fehlt das Ende der Route, ohne jede Fehlermeldung.
+**Letztes Segment vergessen:** Die Schleife endet, aber das letzte Segment wurde noch nicht gespeichert. Ohne `if current_coords: segments.append(...)` nach der Schleife fehlt das Ende der Route — ohne jede Fehlermeldung.
 
-**Koordinaten falsch herum:** KML erwartet `(longitude, latitude)`, nicht `(latitude, longitude)`. Das ist verwirrend aber ein Standard den wir nicht ändern können. Beim ersten Versuch war unsere Route irgendwo im Atlantik.
+**Koordinaten in KML falsch herum:** `simplekml` und der KML-Standard erwarten Koordinaten als `(longitude, latitude)`. `build_segments` speichert sie als `(latitude, longitude)` — beim Übergeben an `newlinestring` Reihenfolge prüfen. Beim ersten Versuch war unsere Route irgendwo im Atlantik.
 
-**float() vergessen:** `csv.reader` liest alles als String. `"22.1" >= 25` vergleicht einen String mit einer Zahl, das ergibt in Python einen `TypeError`. Immer `float()` verwenden bevor du mit CSV-Werten rechnest oder vergleichst.
+**`float()` vergessen:** `csv.reader` liest alles als String. `"22.1" >= 25` vergleicht einen String mit einer Zahl — das ergibt in Python einen `TypeError`. Immer `float()` verwenden bevor du mit CSV-Werten rechnest oder vergleichst.
