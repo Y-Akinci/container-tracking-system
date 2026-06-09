@@ -83,3 +83,120 @@ container-tracking-system/
     ├── database.py
     └── requirements.txt        # noch ausstehend
 ```
+## Applikationen
+
+### App 1 — GPS-Route aus CSV visualisieren (KML)
+
+Liest eine lokale CSV-Datei mit GPS-Koordinaten, Temperatur und Luftfeuchtigkeit, bewertet jeden Punkt und erzeugt eine farbige KML-Datei.
+
+**Installation:**
+
+```bash
+cd 1_Application
+pip install -r requirements.txt
+```
+
+Abhängigkeiten (`requirements.txt`):
+
+```
+simplekml==1.3.6
+```
+
+**Ausführen:**
+
+```bash
+python csv_to_kml.py
+```
+
+Die KML-Datei `olten-brugg.kml` wird im selben Ordner gespeichert. Der Browser öffnet sich automatisch auf kmlviewer.nsspot.net, dort die Datei hochladen.
+
+### App 2 — GPS-Route interaktiv visualisieren (Folium)
+
+Ruft GPS-Daten von einem REST-Server ab. Der Benutzer wählt im Terminal Container und Route aus. Die Route wird als interaktive HTML-Karte im Browser geöffnet.
+
+**Installation:**
+
+```bash
+cd 2_Application
+pip install -r requirements.txt
+```
+
+Abhängigkeiten (`requirements.txt`):
+
+```
+requests==2.32.5
+folium==0.20.0
+```
+
+**Ausführen:**
+
+```bash
+python route_visualization_html.py
+```
+
+Der Server läuft unter `https://fl-17-240.zhdk.cloud.switch.ch`. Eine aktive Internetverbindung ist erforderlich.
+
+### App 3 — Live GPS-Daten empfangen (MQTT-Monitor)
+
+Empfängt GPS-Daten in Echtzeit über MQTT und zeigt Warnungen im Terminal an, wenn Temperatur- oder Feuchtigkeitsgrenzwerte überschritten werden.
+
+**Installation (Monitor):**
+
+```bash
+cd 3_Application
+pip install -r requirements.txt
+```
+
+Abhängigkeiten (`requirements.txt`):
+
+```
+paho-mqtt==2.0.0
+```
+
+**Monitor starten:**
+
+```bash
+python mqtt_monitor.py
+```
+
+**Simulator starten** (separates Terminal):
+
+```bash
+cd "3_Application/Simulator_für 3_Application"
+pip install -r requirements.txt
+python simulator.py --config config-switch-grp4.ini data/olten-brugg.geojson
+```
+
+Abhängigkeiten Simulator (`requirements.txt`):
+
+```
+paho-mqtt==2.0.0
+requests==2.31.0
+```
+
+Der MQTT-Broker läuft unter `fl-17-240.zhdk.cloud.switch.ch` auf Port 9001 über WebSocket. Eine aktive Internetverbindung ist erforderlich.
+
+### App 4 — MQTT-Ingest und Flask-API (in Entwicklung)
+
+Empfängt Live-Daten über MQTT, speichert sie in einer SQLite-Datenbank und stellt sie über eine Flask-API zur Verfügung.
+
+**Installation:**
+
+```bash
+cd 4_Application
+pip install -r requirements.txt
+```
+
+**Datenbank-Ingest starten:**
+
+```bash
+python ingest.py
+```
+
+**Flask-Server starten** (separates Terminal):
+
+```bash
+python app.py
+```
+
+Die API ist erreichbar unter `http://localhost:5000`.
