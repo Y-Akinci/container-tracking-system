@@ -200,3 +200,84 @@ python app.py
 ```
 
 Die API ist erreichbar unter `http://localhost:5000`.
+
+## Gemeinsame Hilfsfunktionen
+
+Die Datei `utils.py` im Wurzelverzeichnis enthält die Funktion `build_segments`, die von App 1 und App 2 gemeinsam genutzt wird. Sie gruppiert aufeinanderfolgende GPS-Punkte mit gleicher Farbe zu Segmenten.
+
+Damit Python diese Datei findet, fügen App 1 und App 2 den übergeordneten Ordner zum Suchpfad hinzu:
+
+```python
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent))
+from utils import build_segments
+```
+
+## Bekannte Einschränkungen
+
+- App 2, 3 und 4 benötigen eine Verbindung zum Server `fl-17-240.zhdk.cloud.switch.ch`. Ohne Verbindung starten die Applikationen nicht.
+- App 4 ist noch nicht vollständig implementiert.
+- Für App 1 muss die CSV-Datei manuell im Ordner `1_Application/` abgelegt werden.
+
+**Installation:**
+
+```bash
+cd 2_Application
+pip install -r requirements.txt
+```
+
+Abhängigkeiten (`requirements.txt`):
+
+```
+requests==2.32.5
+folium==0.20.0
+```
+
+**Ausführen:**
+
+```bash
+python route_visualization_html.py
+```
+
+Der Server läuft unter `https://fl-17-240.zhdk.cloud.switch.ch`. Eine aktive Internetverbindung ist erforderlich.
+
+### App 3 — Live GPS-Daten empfangen (MQTT-Monitor)
+
+Empfängt GPS-Daten in Echtzeit über MQTT und zeigt Warnungen im Terminal an, wenn Temperatur- oder Feuchtigkeitsgrenzwerte überschritten werden.
+
+**Installation (Monitor):**
+
+```bash
+cd 3_Application
+pip install -r requirements.txt
+```
+
+Abhängigkeiten (`requirements.txt`):
+
+```
+paho-mqtt==2.0.0
+```
+
+**Monitor starten:**
+
+```bash
+python mqtt_monitor.py
+```
+
+**Simulator starten** (separates Terminal):
+
+```bash
+cd "3_Application/Simulator_für 3_Application"
+pip install -r requirements.txt
+python simulator.py --config config-switch-grp4.ini data/olten-brugg.geojson
+```
+
+Abhängigkeiten Simulator (`requirements.txt`):
+
+```
+paho-mqtt==2.0.0
+requests==2.31.0
+```
+
+Der MQTT-Broker läuft unter `fl-17-240.zhdk.cloud.switch.ch` auf Port 9001 über WebSocket. Eine aktive Internetverbindung ist erforderlich.
