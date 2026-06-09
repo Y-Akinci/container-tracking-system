@@ -1,7 +1,7 @@
-import json
-import paho.mqtt.client as mqtt
+import json # nötig weil sie als jason-Text ankommen
+import paho.mqtt.client as mqtt # Bringt alles was man zu MQTT braucht
 
-BROKER    = "fl-17-240.zhdk.cloud.switch.ch"
+BROKER    = "fl-17-240.zhdk.cloud.switch.ch" # Daten werden zuerst zum Broker gesendet vom Simulator
 PORT      = 9001
 TOPIC_MSG = "migros/grp4/message"
 TOPIC_STATE = "migros/grp4/state"
