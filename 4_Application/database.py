@@ -32,3 +32,29 @@ def save_message(company, container, route, timestamp, lat, lon, temp, hum):
     )
     conn.commit()
     conn.close()
+
+def get_routes():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT DISTINCT company, container, route,
+               MIN(timestamp) AS start,
+               MAX(timestamp) AS end,
+               MAX(CASE WHEN temp >= 25 OR hum >= 80 THEN 1 ELSE 0 END) AS has_problem
+        FROM messages
+        GROUP BY company, container, route
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
+def get_route_points(container, route):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT timestamp, lat, lon, temp, hum FROM messages WHERE container = ? AND route = ?",
+        (container, route)
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
