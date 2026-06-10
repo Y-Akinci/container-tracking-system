@@ -1,6 +1,6 @@
 # Python Tutorial: GPS-Routen visualisieren mit KML
 
-Im Rahmen von unserem Challenge-Modul CDE1 im Batchelor-Studiengang Data-Science & AI haben wir ein Container-Tracking-System gebaut. Wir haben GPS-Daten als CSV-Datei bekommen, diese ausgelesen, die Temperatur und Feuchtigkeit bewertet und die Route farbig auf einer Karte gezeichnet.
+Im Rahmen von unserem Challenge-Modul CDE1 im Bachelor-Studiengang Data-Science & AI haben wir ein Container-Tracking-System gebaut. Wir haben GPS-Daten als CSV-Datei bekommen, diese ausgelesen, die Temperatur und Feuchtigkeit bewertet und die Route farbig auf einer Karte gezeichnet.
 
 > ![alt text](image.png)
 
