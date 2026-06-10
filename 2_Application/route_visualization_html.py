@@ -8,7 +8,7 @@ from pathlib import Path
 # Zugriff auf utils.py im übergeordneten Projektordner ermöglichen
 sys.path.append(str(Path(__file__).parent.parent))
 
-from utils import build_segments
+from utils import build_segments, get_color
 import webbrowser
 
 BASE_URL = "https://fl-17-240.zhdk.cloud.switch.ch"
@@ -30,17 +30,6 @@ def fetch_csv(BASE_URL, container_id, route_id):
     response = requests.get(BASE_URL + f"/containers/{container_id}/routes/{route_id}")
     rows = list(csv.reader(io.StringIO(response.text)))
     return rows
-
-# Farbe anhand von Temperatur und Luftfeuchtigkeit bestimmen
-def get_color(temp, humidity):
-    if temp >= 25 and humidity >= 80:
-        return "red"
-    elif temp >= 25:
-        return "orange"
-    elif humidity >= 80:
-        return "yellow"
-    else:
-        return "blue"
 
 # Route als HTML-Karte speichern
 def save_html(segments, HTML_PATH):

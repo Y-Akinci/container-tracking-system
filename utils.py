@@ -1,3 +1,14 @@
+# Farbe eines Streckenabschnitts bestimmen
+def get_color(temp, humidity):
+    if temp >= 25 and humidity >= 80:
+        return "red"
+    elif temp >= 25:
+        return "orange"
+    elif humidity >= 80:
+        return "yellow"
+    else:
+        return "blue"
+
 # Teilt GPS-Punkte in farbige Streckenabschnitte auf.
 def build_segments(rows, get_color):
     segments = []

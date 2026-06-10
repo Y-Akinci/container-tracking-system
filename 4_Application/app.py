@@ -6,22 +6,11 @@ from pathlib import Path
 # Zugriff auf utils.py im übergeordneten Projektordner ermöglichen
 sys.path.append(str(Path(__file__).parent.parent))
 
-from utils import build_segments
+from utils import build_segments, get_color
 import folium
 
 # Flask-App erstellen
 app = Flask(__name__)
-
-# Farbe eines Streckenabschnitts bestimmen
-def get_color(temp, humidity):
-    if temp >= 25 and humidity >= 80:
-        return "red"
-    elif temp >= 25:
-        return "orange"
-    elif humidity >= 80:
-        return "yellow"
-    else:
-        return "blue"
 
 # Funktion aufrufen, wenn Startseite "/" im Browser geöffent wird
 @app.route("/")
@@ -40,7 +29,7 @@ def index():
         status = '<span style="color:red">Temperaturproblem</span>' if problem else '<span style="color:green">OK</span>'
         
         # Fügt einen Listeneintrag zur HTML-Seite hinzu.
-        html += f'<li><a href="/route/{container}/{route}">{container} – {route}</a> | {start} bis {end} | {status}</li>'
+        html += f'<li><a href="/route/{container}/{route}">{container} - {route}</a> | {start} bis {end} | {status}</li>'
     
     html += "</ul>"
     return html

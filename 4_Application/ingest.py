@@ -25,10 +25,15 @@ def on_connect(client, userdata, flags, rc, properties=None):
 def on_message(client, userdata, message):
 
     global current_route
+
+    # Nutzlast zu Json-String
     raw = message.payload.decode()
 
     if message.topic == TOPIC_STATE:
+
+        # Json-String zu Python-Dictionary
         info = json.loads(raw)
+
         if info.get("action") == "START":
             current_route = info.get("name")
             print(f"Route gestartet: {current_route}")
@@ -55,12 +60,8 @@ def on_message(client, userdata, message):
 # DB / Tabelle wird erstellt
 init_db()
 
-# MQTT-Client ertsellen
-client = mqtt.Client(
-    mqtt.CallbackAPIVersion.VERSION2,
-    protocol=mqtt.MQTTv5,
-    transport="websockets"
-)
+# MQTT-Client ertsellen (Verbindungsobjekt)
+client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, protocol=mqtt.MQTTv5, transport="websockets")
 
 # Funktion on_connect & on_message mit MQTT-Client verknüpfen
 client.on_connect = on_connect
