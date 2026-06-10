@@ -5,8 +5,8 @@ In dieser zweiten Applikation erweitern wir das bestehende Container-Tracking-Sy
 > ![alt text](image.png)
 
 **Lerninhalt:**
-1. Wie kommen Daten herein? — User Input im Terminal und Abruf von einem Webserver
-2. Wie visualisiert man die Route? — Interaktive HTML-Karte mit Folium
+1. Wie kommen Daten herein? User Input im Terminal und Abruf von einem Webserver
+2. Wie visualisiert man die Route? Interaktive HTML-Karte mit Folium
 
 ---
 
@@ -36,7 +36,7 @@ pip install requests folium
 pip freeze > requirements.txt
 ```
 
-`csv`, `io`, `pathlib`, `webbrowser` und `sys` sind in Python eingebaut — kein `pip` nötig.
+`csv`, `io`, `pathlib`, `webbrowser` und `sys` sind in Python eingebaut, kein `pip` nötig.
 
 ---
 
@@ -58,7 +58,7 @@ In Python macht das Paket `requests` genau das:
 response = requests.get("https://mein-server.ch/containers")
 ```
 
-`response` enthält die Antwort des Servers — entweder als Text (`response.text`) oder direkt als Python-Objekt (`response.json()`), je nachdem was der Server zurückschickt.
+`response` enthält die Antwort des Servers, entweder als Text (`response.text`) oder direkt als Python-Objekt (`response.json()`), je nachdem was der Server zurückschickt.
 
 Der Server stellt mehrere **Endpunkte** zur Verfügung. Das sind URLs, die verschiedene Daten zurückgeben:
 
@@ -68,7 +68,7 @@ GET /containers/{container_id}/routes              → alle Routen eines Contain
 GET /containers/{container_id}/routes/{route_id}   → CSV-Daten einer Route
 ```
 
-`{container_id}` und `{route_id}` sind Platzhalter — dort kommt der echte Wert rein, z.B. `frodo` oder `horw-luzern`.
+`{container_id}` und `{route_id}` sind Platzhalter, dort kommt der echte Wert rein, z.B. `frodo` oder `horw-luzern`.
 
 ---
 
@@ -93,7 +93,7 @@ Der dritte Endpunkt gibt CSV-Text zurück. Dort verwenden wir `response.text`.
 
 ### HTML
 
-Statt einer KML-Datei erzeugt Folium eine **HTML-Datei**. HTML (HyperText Markup Language) ist das Format, das Browser verstehen um Inhalte darzustellen, wie beispielsweise Webseiten, aber auch lokale Dateien. Folium schreibt die Karte inklusive JavaScript in eine einzelne `.html`-Datei, die sich direkt im Browser öffnen lässt. Das Prinzip ist dasselbe wie bei KML: wir erzeugen eine Datei, ein Viewer zeigt sie an — nur dass der Viewer hier der Browser ist.
+Statt einer KML-Datei erzeugt Folium eine **HTML-Datei**. HTML (HyperText Markup Language) ist das Format, das Browser verstehen um Inhalte darzustellen, wie beispielsweise Webseiten, aber auch lokale Dateien. Folium schreibt die Karte inklusive JavaScript in eine einzelne `.html`-Datei, die sich direkt im Browser öffnen lässt. Das Prinzip ist dasselbe wie bei KML: wir erzeugen eine Datei, ein Viewer zeigt sie an, nur dass der Viewer hier der Browser ist.
 
 ---
 
@@ -129,7 +129,7 @@ import folium
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
-from utils import build_segments
+from utils import build_segments, get_color
 import webbrowser
 
 BASE_URL = "https://fl-17-240.zhdk.cloud.switch.ch"
@@ -158,7 +158,7 @@ def fetch_csv(BASE_URL, container_id, route_id):
     return rows
 ```
 
-Die ersten zwei Funktionen geben JSON zurück — `response.json()` liefert direkt ein Dictionary. Die dritte gibt CSV-Text zurück — dort verwenden wir `response.text`.
+Die ersten zwei Funktionen geben JSON zurück, `response.json()` liefert direkt ein Dictionary. Die dritte gibt CSV-Text zurück, dort verwenden wir `response.text`.
 
 `io.StringIO` macht aus dem CSV-String eine virtuelle Datei, die `csv.reader` genau gleich lesen kann wie eine echte Datei:
 
@@ -171,11 +171,30 @@ with open(csv_path) as f:
 rows = list(csv.reader(io.StringIO(response.text)))
 ```
 
-Das Ergebnis — `rows` — ist in beiden Fällen identisch.
+Das Ergebnis, `rows`, ist in beiden Fällen identisch.
 
 ---
 
 ## Schritt 3: Farbe pro Messpunkt bestimmen
+
+`get_color` entscheidet pro Messpunkt, welche Farbe der Streckenabschnitt
+bekommt: Rot, Orange, Gelb oder Blau, je nach Temperatur und Feuchtigkeit. Die
+Logik ist identisch zu App 1, mit einem Unterschied: statt `simplekml.Color.red`
+verwenden wir einfache Farb-Strings, die Folium versteht.
+
+Neu in dieser Fassung: `get_color` steht nicht mehr direkt in dieser Datei,
+sondern liegt zusammen mit `build_segments` in `utils.py`. Beide Funktionen
+werden von mehreren Apps gebraucht (App 2 für die Folium-Karte, App 4 fürs
+Dashboard). Darum gehören sie an einen gemeinsamen Ort, statt in jede App kopiert
+zu werden. Das gibt eine einzige Quelle der Wahrheit: ändert sich einmal eine
+Farbgrenze, passt man sie genau an einer Stelle an, und alle Apps profitieren.
+Importiert wird `get_color` deshalb gleich neben `build_segments`:
+
+```python
+from utils import build_segments, get_color
+```
+
+So sieht die Funktion in `utils.py` aus:
 
 ```python
 def get_color(temp, humidity):
@@ -189,7 +208,9 @@ def get_color(temp, humidity):
         return "blue"
 ```
 
-Die Logik ist identisch zu App 1. Der einzige Unterschied: statt `simplekml.Color.red` verwenden wir einfache Farb-Strings, die Folium versteht. `build_segments` aus `utils.py` bleibt komplett unverändert.
+Die Reihenfolge der Bedingungen zählt: zuerst der strengste Fall (beides zu hoch,
+Rot), dann die Einzelfälle, sonst Blau. `build_segments` aus `utils.py` bleibt
+ebenfalls komplett unverändert.
 
 ---
 
@@ -215,7 +236,7 @@ def select_container():
     return container
 ```
 
-`while True` läuft so lange bis der Benutzer eine gültige Eingabe macht. `break` beendet die Schleife sobald alles erfolgreich war. `continue` springt direkt zum nächsten Schleifendurchlauf — damit wird eine negative Zahl abgefangen, bevor sie als Index verwendet wird.
+`while True` läuft so lange bis der Benutzer eine gültige Eingabe macht. `break` beendet die Schleife sobald alles erfolgreich war. `continue` springt direkt zum nächsten Schleifendurchlauf, damit wird eine negative Zahl abgefangen, bevor sie als Index verwendet wird.
 
 `containers[container_choice - 1]` steht innerhalb von `try`, damit `IndexError` abgefangen wird. `-1` weil der Benutzer ab 1 zählt, Python ab 0.
 
@@ -258,7 +279,7 @@ def save_html(segments, HTML_PATH):
     karte.save(str(HTML_PATH))
 ```
 
-**`segments[0][1][0]`** greift auf die erste Koordinate der Route zu — sie dient als Startpunkt der Karte:
+**`segments[0][1][0]`** greift auf die erste Koordinate der Route zu, sie dient als Startpunkt der Karte:
 
 ```python
 segments[0]       # erstes Segment -> ("blue", [(lat1,lon1), (lat2,lon2)])
@@ -268,7 +289,7 @@ segments[0][1][0] # erste Koordinate -> (lat1, lon1)
 
 **`folium.Map()`** erstellt die Karte. **`folium.PolyLine()`** zeichnet eine Linie pro Segment. **`.add_to(karte)`** fügt sie zur Karte hinzu. **`karte.save()`** schreibt die fertige Karte als HTML-Datei.
 
-Folium erwartet Koordinaten als `(latitude, longitude)` — das ist dieselbe Reihenfolge wie in `build_segments` in `utils.py`.
+Folium erwartet Koordinaten als `(latitude, longitude)`, das ist dieselbe Reihenfolge wie in `build_segments` in `utils.py`.
 
 ---
 
@@ -299,4 +320,4 @@ if __name__ == "__main__":
 
 **Dictionary-Schlüssel vergessen:** `response.json()` gibt ein Dictionary zurück, keine Liste. Ohne `["containers"]` bekommst du das ganze Dictionary statt der Liste der Container.
 
-**Koordinatenreihenfolge:** Folium erwartet `(latitude, longitude)`. KML in App 1 erwartete `(longitude, latitude)`. `build_segments` in `utils.py` gibt `(latitude, longitude)` zurück — passt also direkt zu Folium.
+**Koordinatenreihenfolge:** Folium erwartet `(latitude, longitude)`. KML in App 1 erwartete `(longitude, latitude)`. `build_segments` in `utils.py` gibt `(latitude, longitude)` zurück, passt also direkt zu Folium.
