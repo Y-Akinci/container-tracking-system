@@ -28,7 +28,7 @@ Bevor du beginnst, solltest du folgende Grundkenntnisse in Python mitbringen:
 
 Bevor wir mit dem eigentlichen Code beginnen, richten wir die Arbeitsumgebung ein.
 
-Wenn du einfach `pip install simplekml` ausführst, wird das Paket **global** installiert — für den ganzen Computer. Das klingt praktisch, führt aber zu Problemen sobald du mehrere Projekte hast, die verschiedene Versionen desselben Pakets brauchen. Python kann nicht zwei Versionen gleichzeitig global installiert haben.
+Wenn du einfach `pip install simplekml` ausführst, wird das Paket **global** installiert für den ganzen Computer. Das klingt praktisch, führt aber zu Problemen sobald du mehrere Projekte hast, die verschiedene Versionen desselben Pakets brauchen. Python kann nicht zwei Versionen gleichzeitig global installiert haben.
 
 Die Lösung ist eine **virtuelle Umgebung**. Das ist ein isolierter Python-Bereich nur für dein Projekt. Jedes Projekt hat seine eigenen Pakete in eigenen Versionenm; kein Konflikt, kein Chaos.
 
