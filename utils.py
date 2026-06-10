@@ -1,3 +1,4 @@
+# Teilt GPS-Punkte in farbige Streckenabschnitte auf.
 def build_segments(rows, get_color):
     segments = []
     current_color = None
@@ -12,6 +13,8 @@ def build_segments(rows, get_color):
         if color != current_color:
             if current_coords:
                 segments.append((current_color, current_coords))
+                
+                # letzte Punkt wird als Startpunkt des neuen Abschnitts übernommen.
                 current_coords = [current_coords[-1]]
             current_color = color
 

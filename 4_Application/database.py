@@ -26,6 +26,7 @@ def init_db():
 def save_message(company, container, route, timestamp, lat, lon, temp, hum):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
+    
     # Neue Nachricht mit allen Messwerten in die Tabelle messages einfügen
     cursor.execute(
         "INSERT INTO messages VALUES (?, ?, ?, ?, ?, ?, ?, ?)",

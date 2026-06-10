@@ -9,8 +9,10 @@ CONTAINER = "grp4"
 TOPIC_MSG = f"{COMPANY}/{CONTAINER}/message"
 TOPIC_STATE = f"{COMPANY}/{CONTAINER}/state"
 
+# Speichert Namen der aktuelle laufenden Route
 current_route = None
 
+# Wird automatisch aufgerufen, sobald Verbindung zum MQTT-Broker hergestellt wurde
 def on_connect(client, userdata, flags, rc, properties=None):
     if rc == 0:
         print(f"Verbunden mit {BROKER}")
@@ -19,7 +21,9 @@ def on_connect(client, userdata, flags, rc, properties=None):
     else:
         print(f"Verbindung fehlgeschlagen, Code: {rc}")
 
+# Wird automatisch aufgerufen, sobald MQTT-Nachricht empfangen wird
 def on_message(client, userdata, message):
+
     global current_route
     raw = message.payload.decode()
 
@@ -48,19 +52,24 @@ def on_message(client, userdata, message):
     )
     print(f"Gespeichert: {daten['timestamp']} | {daten['temp']}°C")
 
+# DB / Tabelle wird erstellt
 init_db()
 
+# MQTT-Client ertsellen
 client = mqtt.Client(
     mqtt.CallbackAPIVersion.VERSION2,
     protocol=mqtt.MQTTv5,
     transport="websockets"
 )
+
+# Funktion on_connect & on_message mit MQTT-Client verknüpfen
 client.on_connect = on_connect
 client.on_message = on_message
 
 print("Verbinde...")
 client.connect(BROKER, PORT)
 
+# Startet Endlosschleife des MQTT-Clients
 try:
     client.loop_forever()
 except KeyboardInterrupt:
