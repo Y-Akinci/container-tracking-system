@@ -194,7 +194,7 @@ Das `with`-Statement stellt sicher dass die Datei automatisch geschlossen wird, 
 
 `newline=""` verhindert dass Python Zeilenumbrüche doppelt interpretiert. Das ist eine Empfehlung der offiziellen Python-Dokumentation für `csv.reader`.
 
-`list(inputfile)` wandelt den CSV-Reader in eine Liste um. Jede Zeile der CSV-Datei wird dabei selbst zu einer Liste von Strings — `rows` ist also eine **Liste von Listen**:
+`list(inputfile)` wandelt den CSV-Reader in eine Liste um. Jede Zeile der CSV-Datei wird dabei selbst zu einer Liste von Strings `rows` ist also eine **Liste von Listen**:
 
 ```python
 [
@@ -222,7 +222,7 @@ def get_color(temp, humidity):
 
 Das `and` in der ersten Bedingung ist entscheidend: Nur wenn beide Kriterien zutreffen, wird es Rot. `elif` stellt sicher dass immer genau eine Farbe gewählt wird. Die erste zutreffende Bedingung gewinnt, der Rest wird übersprungen.
 
-Diese Logik ist in eine eigene Funktion ausgelagert damit sie isoliert testbar ist. `get_color(30, 90)` sollte Rot zurückgeben. Ausserdem macht es die Hauptlogik übersichtlicher — und `build_segments` in `utils.py` kann sie als Parameter entgegennehmen, ohne selbst zu wissen, wie Farben bestimmt werden.
+Diese Logik ist in eine eigene Funktion ausgelagert damit sie isoliert testbar ist. `get_color(30, 90)` sollte Rot zurückgeben. Ausserdem macht es die Hauptlogik übersichtlicher und `build_segments` in `utils.py` kann sie als Parameter entgegennehmen, ohne selbst zu wissen, wie Farben bestimmt werden.
 
 ---
 
@@ -264,7 +264,7 @@ def build_segments(rows, get_color):
 Wenn ein Segment endet und ein neues beginnt, übernehmen wir den letzten Punkt des alten Segments als ersten Punkt des neuen. Ohne das hätte die Route sichtbare Lücken an jedem Farbwechsel. `[-1]` ist der Python-Index für das letzte Element einer Liste.
 
 **Warum nochmals `append` nach der Schleife?**
-Die Schleife speichert ein Segment erst wenn die Farbe wechselt. Das allerletzte Segment wird nie durch einen Wechsel abgeschlossen — ohne die Zeile nach der Schleife würde das Ende der Route in der KML-Datei fehlen, ohne jede Fehlermeldung.
+Die Schleife speichert ein Segment erst wenn die Farbe wechselt. Das allerletzte Segment wird nie durch einen Wechsel abgeschlossen ohne die Zeile nach der Schleife würde das Ende der Route in der KML-Datei fehlen, ohne jede Fehlermeldung.
 
 ---
 
@@ -282,11 +282,11 @@ def save_kml(segments, kml_path):
     kml.save(str(kml_path))
 ```
 
-`simplekml.Kml()` ist der Container für alles in der Datei. Eine Linie in KML heisst `LineString` — `newlinestring` erzeugt sie. `enumerate(segments)` gibt gleichzeitig den Index `i` und den Wert `(color, coords)`, so bekommt jede Linie einen eindeutigen Namen (`Route_0`, `Route_1`, ...).
+`simplekml.Kml()` ist der Container für alles in der Datei. Eine Linie in KML heisst `LineString` `newlinestring` erzeugt sie. `enumerate(segments)` gibt gleichzeitig den Index `i` und den Wert `(color, coords)`, so bekommt jede Linie einen eindeutigen Namen (`Route_0`, `Route_1`, ...).
 
 `kml.save()` erwartet einen String, deshalb `str(kml_path)` um das `Path`-Objekt umzuwandeln.
 
-`save_kml` weiss nichts von `build_segments` — und umgekehrt. Diese Trennung macht den Code austauschbar: willst du statt KML ein anderes Format, schreibst du einfach eine neue `save_`-Funktion und der Rest bleibt unverändert.
+`save_kml` weiss nichts von `build_segments` und umgekehrt. Diese Trennung macht den Code austauschbar: willst du statt KML ein anderes Format, schreibst du einfach eine neue `save_`-Funktion und der Rest bleibt unverändert.
 
 ---
 
@@ -311,8 +311,8 @@ if __name__ == "__main__":
 
 **Falscher Spalten-Index:** Unsere CSV hat keine Header-Zeile. Wenn du den falschen Index verwendest bekommst du falsche Werte ohne Fehlermeldung. Python stürzt nicht ab, du bekommst einfach falsche Farben auf der Karte. Immer zuerst die CSV-Struktur prüfen bevor du Indizes verwendest.
 
-**Letztes Segment vergessen:** Die Schleife endet, aber das letzte Segment wurde noch nicht gespeichert. Ohne `if current_coords: segments.append(...)` nach der Schleife fehlt das Ende der Route — ohne jede Fehlermeldung.
+**Letztes Segment vergessen:** Die Schleife endet, aber das letzte Segment wurde noch nicht gespeichert. Ohne `if current_coords: segments.append(...)` nach der Schleife fehlt das Ende der Route ohne jede Fehlermeldung.
 
-**Koordinaten in KML falsch herum:** `simplekml` und der KML-Standard erwarten Koordinaten als `(longitude, latitude)`. `build_segments` speichert sie als `(latitude, longitude)` — beim Übergeben an `newlinestring` Reihenfolge prüfen. Beim ersten Versuch war unsere Route irgendwo im Atlantik.
+**Koordinaten in KML falsch herum:** `simplekml` und der KML-Standard erwarten Koordinaten als `(longitude, latitude)`. `build_segments` speichert sie als `(latitude, longitude)` beim Übergeben an `newlinestring` Reihenfolge prüfen. Beim ersten Versuch war unsere Route irgendwo im Atlantik.
 
-**`float()` vergessen:** `csv.reader` liest alles als String. `"22.1" >= 25` vergleicht einen String mit einer Zahl — das ergibt in Python einen `TypeError`. Immer `float()` verwenden bevor du mit CSV-Werten rechnest oder vergleichst.
+**`float()` vergessen:** `csv.reader` liest alles als String. `"22.1" >= 25` vergleicht einen String mit einer Zahl das ergibt in Python einen `TypeError`. Immer `float()` verwenden bevor du mit CSV-Werten rechnest oder vergleichst.
