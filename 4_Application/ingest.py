@@ -2,11 +2,11 @@ import json
 import paho.mqtt.client as mqtt
 from database import init_db, save_message
 
-BROKER    = "fl-17-240.zhdk.cloud.switch.ch"
-PORT      = 9001
-COMPANY   = "migros"
+BROKER = "fl-17-240.zhdk.cloud.switch.ch"
+PORT = 9001
+COMPANY = "migros"
 CONTAINER = "grp4"
-TOPIC_MSG   = f"{COMPANY}/{CONTAINER}/message"
+TOPIC_MSG = f"{COMPANY}/{CONTAINER}/message"
 TOPIC_STATE = f"{COMPANY}/{CONTAINER}/state"
 
 current_route = None
