@@ -114,7 +114,7 @@ script_dir = Path(__file__).parent
 pfad = script_dir / "daten.csv"
 ```
 
-`__file__` ist eine eingebaute Variable die den absoluten Pfad der aktuellen Python-Datei enthält. `.parent` gibt den Ordner zurück in dem sie liegt. Der `/`-Operator bei `Path`-Objekten baut Pfade plattformunabhängig zusammen — kein Unterschied mehr zwischen Windows und Mac/Linux.
+`__file__` ist eine eingebaute Variable die den absoluten Pfad der aktuellen Python-Datei enthält. `.parent` gibt den Ordner zurück in dem sie liegt. Der `/`-Operator bei `Path`-Objekten baut Pfade plattformunabhängig zusammen, kein Unterschied mehr zwischen Windows und Mac/Linux.
 
 **`simplekml`** erzeugt KML-Dateien. **KML** (Keyhole Markup Language) ist ein XML-Format das Google Maps und viele andere Viewer verstehen, um geografische Daten wie Routen, Punkte und Flächen darzustellen. Wir hätten die KML-Datei von Hand als Text schreiben können, aber das wäre fehleranfällig und aufwändig. `simplekml` abstrahiert das weg.
 
