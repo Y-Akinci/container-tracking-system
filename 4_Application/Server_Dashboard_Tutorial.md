@@ -1,12 +1,16 @@
 # Python Tutorial: Eigener Server mit Datenbank und Dashboard
 
-In dieser vierten und letzten Applikation drehen wir das ganze Prinzip um. In App 1 bis 3 haben wir Daten **konsumiert**: aus einer CSV-Datei, von einem fremden Webserver, über MQTT. Jetzt bauen wir die andere Seite. App 4 empfängt die Live-Daten des Simulators, speichert sie dauerhaft in einer Datenbank und zeigt sie über unseren **eigenen** Webserver als Dashboard im Browser an.
+In dieser vierten und letzten Applikation drehen wir das ganze Prinzip um. In
+App 1 bis 3 haben wir Daten **konsumiert**: aus einer CSV-Datei, von einem
+fremden Webserver, über MQTT. Jetzt bauen wir die andere Seite. App 4 empfängt
+die Live-Daten des Simulators, speichert sie dauerhaft in einer Datenbank und
+zeigt sie über unseren **eigenen** Webserver als Dashboard im Browser an.
 
 > ![alt text](image.png)
 
 **Lerninhalt:**
-Wie speichert man laufend eintreffende Daten dauerhaft? Datenbank mit SQLite.
-Wie stellt man eigene Daten im Browser bereit? Eigener Webserver mit Flask.
+1. Wie speichert man laufend eintreffende Daten dauerhaft? Datenbank mit SQLite
+2. Wie stellt man eigene Daten im Browser bereit? Eigener Webserver mit Flask
 
 ---
 
@@ -31,8 +35,9 @@ gesendet wird weiterhin wie in App 3.
 Neu in diesem Tutorial:
 
 - Daten dauerhaft speichern mit einer Datenbank (SQLite, eingebaut in Python)
-- Ein bisschen SQL: vier Sätze reichen
+- Ein bisschen SQL: ein paar Sätze reichen
 - Einen eigenen Webserver bauen mit `flask`
+- Zwei Endlosschleifen gleichzeitig laufen lassen mit einem Thread (`threading`)
 - Der Perspektivwechsel: in App 2 waren wir der Client, jetzt sind wir der Server
 
 ---
@@ -53,22 +58,46 @@ pip freeze > requirements.txt
 
 ### Die Idee: Sammeln und Anzeigen trennen
 
-App 4 besteht aus zwei unabhängigen Programmen, die sich eine Datenbank teilen:
+App 4 ist auf drei Dateien aufgeteilt, jede mit genau einer Aufgabe. Sie teilen
+sich eine Datenbank und kennen einander sonst kaum:
 
 ```
 [Simulator] --MQTT--> [ingest.py] --speichert--> [tracking.db] <--liest-- [app.py] --> [Browser]
 ```
 
-- **`ingest.py`** hört dem Simulator zu (wie App 3) und schreibt jeden Punkt in
-  die Datenbank.
-- **`app.py`** ist der Webserver. Er liest die Datenbank und zeigt das Dashboard
-  an.
+- **`database.py`** ist die Datenschicht: sie legt die Datenbank an (`init_db`) und stellt
+  Funktionen zum Speichern (`save_message`) und Lesen (`get_routes`,
+  `get_route_points`) bereit. Sie kennt weder MQTT noch Flask, nur SQLite.
+- **`ingest.py`** ist der Sammler: er hört dem Broker zu und schreibt jeden
+  empfangenen Punkt über `save_message` in die Datenbank. Er kennt nur MQTT und
+  `database.py`.
+- **`app.py`** ist der Webserver und zugleich der Startpunkt der Anwendung: er
+  liest die Datenbank über `database.py` und zeigt das Dashboard im Browser. Beim
+  Start bringt er ausserdem den Sammler mit ins Spiel (dazu gleich der Thread).
 
-Die Trennung ist Absicht. `ingest.py` kann tagelang im Hintergrund sammeln, auch
-wenn niemand zuschaut. Und `app.py` kann vergangene Routen anzeigen, auch wenn
-gerade kein Simulator fährt, denn die Daten liegen in der Datenbank. Das ist
-dasselbe Prinzip wie in App 1, wo `save_kml` nichts von `build_segments` weiss:
-jeder Teil hat eine Aufgabe und kennt den anderen nicht.
+Die Aufteilung ist Absicht: `database.py` weiss nichts von der Aussenwelt, der
+Sammler nichts vom Web, der Webserver nichts von MQTT. Jeder Teil hat eine
+Aufgabe und redet mit den anderen nur über die Datenbank, dasselbe Prinzip wie in
+App 1, wo `save_kml` nichts von `build_segments` weiss. Weil die Daten dauerhaft
+in `tracking.db` liegen, kann der Sammler im Hintergrund laufen, und der
+Webserver kann auch vergangene Routen zeigen, wenn gerade kein Simulator fährt.
+
+### Mehrere Dinge gleichzeitig: der Thread
+
+Sammler und Webserver haben dasselbe Problem: beide wollen *dauerhaft* laufen.
+Der MQTT-Sammler ruft `loop_forever()` auf und wartet endlos auf Nachrichten; der
+Webserver ruft `app.run()` auf und wartet endlos auf Browser-Anfragen. Keiner der
+beiden Aufrufe gibt von selbst je die Kontrolle zurück. Schriebe man sie
+untereinander, käme die zweite Zeile nie an die Reihe, weil die erste für immer
+läuft.
+
+Ein **Thread** löst das: er ist ein zweiter Ausführungsstrang, der *neben* dem
+Hauptprogramm läuft. Wir stecken den Sammler in einen Thread, sodass er endlos
+horchen kann, während der Webserver im Hauptstrang ebenfalls endlos auf Anfragen
+wartet. Beides läuft gleichzeitig in einem einzigen `python app.py`. Der Zusatz
+`daemon=True` sorgt dafür, dass der Sammler-Thread automatisch endet, sobald das
+Hauptprogramm (der Webserver) stoppt, sonst bliebe er als Geist im Hintergrund
+hängen.
 
 ### Was ist eine Datenbank, und warum nicht einfach CSV?
 
@@ -259,7 +288,7 @@ def get_routes():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT DISTINCT company, container, route,
+        SELECT company, container, route,
                MIN(timestamp) AS start,
                MAX(timestamp) AS end,
                MAX(CASE WHEN temp >= 25 OR hum >= 80 THEN 1 ELSE 0 END) AS has_problem
@@ -310,8 +339,10 @@ python -c "import sqlite3; c=sqlite3.connect('tracking.db'); print(c.execute('SE
 
 ## Schritt 3: Daten empfangen und speichern (ingest.py)
 
-Das ist der `mqtt_monitor.py` aus App 3, fast Zeile für Zeile. Der einzige
-Unterschied: wo App 3 `print` hatte, steht jetzt `save_message`.
+`ingest.py` ist der Sammler aus dem Architektur-Bild: er hört dem MQTT-Broker zu
+und schreibt jeden empfangenen Punkt über `save_message` in die Datenbank. Die
+MQTT-Mechanik (Verbindung, Callbacks, Topics) ist dieselbe wie in App 3, sie
+mündet hier nur in einen Datenbank-Eintrag statt in eine `print`-Ausgabe.
 
 ```python
 import json
@@ -328,11 +359,12 @@ TOPIC_STATE = f"{COMPANY}/{CONTAINER}/state"
 current_route = None
 ```
 
-Neu gegenüber App 3 ist nur der Import unserer eigenen Datenbank-Funktionen
-(wie `build_segments` aus `utils.py` importiert wird) und die Variable
-`current_route`. Die brauchen wir, weil das Dashboard später zeigen soll
-*welche* Route gefahren wurde, und der Routenname steht nur in der
-START-Meldung, nicht in jedem GPS-Punkt.
+Oben importiert `ingest.py` die eigenen Datenbank-Funktionen (genauso, wie
+`build_segments` aus `utils.py` geholt wird) und legt die Variable
+`current_route` an. Sie merkt sich, welche Route gerade läuft, denn das Dashboard
+soll später zeigen *welche* Route gefahren wurde, und der Routenname steht nur in
+der START-Meldung, nicht in jedem GPS-Punkt. Anfangswert `None` heisst: noch
+keine Route gestartet.
 
 ```python
 def on_connect(client, userdata, flags, rc, properties=None):
@@ -344,7 +376,8 @@ def on_connect(client, userdata, flags, rc, properties=None):
         print(f"Verbindung fehlgeschlagen, Code: {rc}")
 ```
 
-Exakt App 3: Verbindung steht (`rc == 0`), Topics abonnieren.
+Sobald die Verbindung steht (`rc == 0`), abonnieren wir die zwei Topics. Erst ab
+dann schickt der Broker überhaupt Nachrichten.
 
 ```python
 def on_message(client, userdata, message):
@@ -358,6 +391,7 @@ def on_message(client, userdata, message):
             print(f"Route gestartet: {current_route}")
         elif info.get("action") == "STOP":
             print(f"Route beendet: {current_route}")
+            current_route = None
         return
 
     if current_route is None:
@@ -373,7 +407,7 @@ def on_message(client, userdata, message):
     print(f"Gespeichert: {daten['timestamp']} | {daten['temp']}°C")
 ```
 
-Hier liegt die ganze neue Logik:
+Vier Stellen lohnen den Blick:
 
 **`global current_route`**: diese Funktion wird von paho-mqtt aufgerufen, nicht
 von uns. Damit sie die äussere Variable verändern kann, muss `global` dastehen.
@@ -381,42 +415,64 @@ Ohne das würde Python eine neue, lokale Variable anlegen und die äussere blieb
 leer.
 
 **State-Block**: kommt eine Nachricht auf dem State-Topic, merken wir uns bei
-START den Routennamen. `return` beendet die Funktion sofort, denn eine
+START den Routennamen in `current_route`. Bei STOP setzen wir `current_route`
+wieder auf `None`. Damit gehört nach dem Ende einer Route kein Punkt mehr zu ihr:
+trudelt nach dem STOP noch ein verspäteter Punkt ein, fällt er durch das
+Sicherheitsnetz weiter unten und wird verworfen, statt der beendeten Route
+zugeschlagen zu werden. `return` beendet die Funktion sofort, denn eine
 State-Meldung ist kein GPS-Punkt.
 
 **`if current_route is None: return`**: Sicherheitsnetz: kommen Punkte bevor
 ein START kam, wissen wir nicht zu welcher Route sie gehören. Lieber wegwerfen
 als falsch speichern.
 
-**`save_message(...)`**: hier stand in App 3 `print_update(daten)`. Das ist der
-ganze Umbau. Die acht Werte passen zu den acht Spalten. `float()` ist Pflicht,
-weil Temperatur und Feuchtigkeit als Strings ankommen, genau wie in App 1 bis 3.
+**`save_message(...)`**: erreicht die Funktion diese Zeile, ist es ein echter
+GPS-Punkt einer laufenden Route, und er wird gespeichert. Die acht Werte passen
+zu den acht Spalten. `float()` ist Pflicht, weil Temperatur und Feuchtigkeit als
+Strings ankommen, genau wie in App 1 bis 3.
 
 ```python
-init_db()
+def start_mqtt():
+    init_db()
 
-client = mqtt.Client(
-    mqtt.CallbackAPIVersion.VERSION2,
-    protocol=mqtt.MQTTv5,
-    transport="websockets"
-)
-client.on_connect = on_connect
-client.on_message = on_message
+    client = mqtt.Client(
+        mqtt.CallbackAPIVersion.VERSION2,
+        protocol=mqtt.MQTTv5,
+        transport="websockets"
+    )
+    client.on_connect = on_connect
+    client.on_message = on_message
 
-print("Verbinde...")
-client.connect(BROKER, PORT)
+    try:
+        print("Verbinde...")
+        client.connect(BROKER, PORT)
+        client.loop_forever()
+    except KeyboardInterrupt:
+        print("\nBeendet.")
+        client.disconnect()
+    except Exception as e:
+        print(f"MQTT-Verbindung fehlgeschlagen: {e}")
 
-try:
-    client.loop_forever()
-except KeyboardInterrupt:
-    print("\nBeendet.")
-    client.disconnect()
+
+if __name__ == "__main__":
+    init_db()
+    start_mqtt()
 ```
 
-Exakt App 3, plus `init_db()` ganz am Anfang, das stellt sicher, dass die
-Tabelle existiert, bevor der erste Punkt kommt. `transport="websockets"` ist
-wieder entscheidend, weil der Broker nur über Port 9001 per WebSocket erreichbar
-ist.
+Der ganze Verbindungsaufbau steckt in einer Funktion `start_mqtt()`. Das ist der
+entscheidende Punkt fürs Zusammenspiel: weil es eine Funktion ist, kann `app.py`
+sie aufrufen und den Sammler mitstarten, statt `ingest.py` in einem eigenen
+Terminal laufen zu lassen. `init_db()` ganz am Anfang stellt sicher, dass die
+Tabelle existiert, bevor der erste Punkt kommt. `client.loop_forever()` ist die
+Endlosschleife, die auf Nachrichten wartet; das `try/except` fängt Strg+C sauber
+ab und gibt sonstige Verbindungsfehler als Meldung aus, statt abzustürzen.
+`transport="websockets"` ist wieder entscheidend, weil der Broker nur über Port
+9001 per WebSocket erreichbar ist.
+
+Der `if __name__ == "__main__"`-Block erlaubt weiterhin, `ingest.py` allein zu
+starten (`python ingest.py`), etwa zum Testen. Wird die Datei dagegen von
+`app.py` importiert, läuft dieser Block nicht; dann entscheidet `app.py`, wann
+`start_mqtt()` losgeht.
 
 ### Test
 
@@ -479,8 +535,11 @@ Flask.
 ### Etappe 2: Dashboard und Karte
 
 ```python
+from datetime import datetime
 from flask import Flask
-from database import get_routes, get_route_points
+import threading
+from database import get_routes, get_route_points, init_db
+from ingest import start_mqtt
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
@@ -497,8 +556,8 @@ def index():
     for row in routes:
         container = row[1]
         route     = row[2]
-        start     = row[3]
-        end       = row[4]
+        start     = datetime.fromisoformat(str(row[3])).strftime("%d.%m.%Y %H:%M") if row[3] else ""
+        end       = datetime.fromisoformat(str(row[4])).strftime("%d.%m.%Y %H:%M") if row[4] else ""
         problem   = row[5]
         status = '<span style="color:red">Temperaturproblem</span>' if problem else '<span style="color:green">OK</span>'
         html += f'<li><a href="/route/{container}/{route}">{container} - {route}</a> | {start} bis {end} | {status}</li>'
@@ -522,7 +581,9 @@ def show_route(container, route):
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    init_db()
+    threading.Thread(target=start_mqtt, daemon=True).start()
+    app.run(debug=True, use_reloader=False)
 ```
 
 **`get_color`** wird nicht mehr hier definiert, sondern liegt zusammen mit
@@ -533,7 +594,10 @@ Inhaltlich ist sie identisch: Farb-Strings für Folium, dieselben Grenzwerte.
 
 **`index()`** ruft `get_routes()` auf und baut den HTML-String Stück für Stück
 zusammen: Überschrift, Liste auf, ein `<li>` pro Route, Liste zu. Der `<a>`-Link
-macht jede Route anklickbar und zeigt auf `/route/grp4/olten-brugg`.
+macht jede Route anklickbar und zeigt auf `/route/grp4/olten-brugg`. Start- und
+Endzeit kommen als ISO-Text aus der Datenbank;
+`datetime.fromisoformat(...).strftime("%d.%m.%Y %H:%M")` macht daraus ein
+lesbares Datum, und das `if row[3] else ""` fängt fehlende Werte ab.
 
 **`show_route(container, route)`** ist der spannende Teil. Die Adresse enthält
 Platzhalter `<container>` und `<route>`, Flask nimmt die Werte direkt aus der
@@ -556,36 +620,44 @@ segments[0][1]    # Koordinatenliste -> [(lat1,lon1), ...]
 segments[0][1][0] # erste Koordinate -> (lat1, lon1)
 ```
 
+**Der Start unten** bringt alles zusammen: `init_db()` legt die Tabelle an,
+`threading.Thread(target=start_mqtt, daemon=True).start()` startet den Sammler im
+Hintergrund (der Thread aus den Konzepten), und `app.run(...)` startet den
+Webserver im Vordergrund. Ein einziger `python app.py` empfängt also Daten *und*
+zeigt sie an. `use_reloader=False` ist hier wichtig: der Auto-Neustart von
+`debug=True` würde den `__main__`-Block ein zweites Mal ausführen und damit einen
+zweiten MQTT-Thread öffnen; das schalten wir ab.
+
 ### Test
 
-Flask hat sich automatisch neu gestartet. `http://localhost:5000` neu laden:
-eine Liste mit der Route, Status und einem Link. Klick auf den Link → die
-farbige Karte, genau wie in App 2.
+`python app.py` starten und `http://localhost:5000` öffnen: eine Liste mit der
+Route, Status und einem Link. Klick auf den Link, dann erscheint die farbige
+Karte, genau wie in App 2. Weil der Reloader aus ist, nach Code-Änderungen den
+Server kurz stoppen (Strg+C) und neu starten.
 
 ---
 
 ## Schritt 5: Alles zusammen betreiben
 
-Im Live-Betrieb braucht es zwei Terminals, plus den Browser:
+`app.py` startet den Sammler-Thread und den Webserver in einem Rutsch. Im
+Live-Betrieb braucht es darum neben dem Browser nur noch den Simulator:
 
 ```
-Terminal 1:  python ingest.py     (sammelt aus MQTT in die DB)
-Terminal 2:  python simulator.py --config config-switch-grp4.ini data/olten-brugg.geojson
-Browser:     python app.py  ->  http://localhost:5000  (zeigt das Dashboard)
+Terminal 1:  python simulator.py --config config-switch-grp4.ini data/olten-brugg.geojson
+Terminal 2:  python app.py   (Sammler im Hintergrund + Webserver)
+Browser:     http://localhost:5000   (zeigt das Dashboard)
 ```
 
-Zum reinen Anschauen vergangener Routen reicht `app.py` allein, die Daten
-liegen ja in der Datenbank. Das ist genau die Retrospektive aus dem
-Challenge-Auftrag: App 3 war der Live-Stream, der nichts behält; App 4 ist das
-Archiv, das alles behält und auf Nachfrage rauskramt.
+Der Simulator sendet die Punkte, der Sammler-Thread in `app.py` schreibt sie in
+die Datenbank, und derselbe `app.py`-Prozess zeigt sie im Browser. Zum reinen
+Anschauen vergangener Routen reicht `app.py` ohne Simulator, die Daten liegen ja
+in der Datenbank. Das ist genau die Retrospektive aus dem Challenge-Auftrag:
+App 3 war der Live-Stream, der nichts behält; App 4 ist das Archiv, das alles
+behält und auf Nachfrage rauskramt.
 
 ---
 
 ## Klassische Fehler
-
-**`NameError: get_routes is not defined`:** Entweder fehlt die Funktion in
-`database.py`, oder der Import oben in `app.py`
-(`from database import get_routes, get_route_points`). Beide Dateien prüfen.
 
 **`global` vergessen:** Ohne `global current_route` in `on_message` legt Python
 eine lokale Variable an, der Routenname kommt nie nach draussen, und alle Punkte
@@ -593,7 +665,7 @@ werden mit `None` als Route gespeichert, ohne Fehlermeldung.
 
 **`init_db()` zu spät oder gar nicht:** Wird der erste Punkt gespeichert bevor
 die Tabelle existiert, gibt es einen `OperationalError: no such table`. Deshalb
-`init_db()` ganz am Anfang von `ingest.py`.
+ruft `start_mqtt()` `init_db()` ganz am Anfang auf.
 
 **`commit()` vergessen:** Ohne `conn.commit()` nach `INSERT` wird nichts wirklich
 gespeichert. Das Programm läuft fehlerfrei, aber die Datenbank bleibt leer, ein
@@ -611,3 +683,8 @@ gerechnet oder verglichen wird.
 **`transport="websockets"` vergessen:** Wie in App 3, ohne diesen Parameter
 versucht paho-mqtt eine direkte TCP-Verbindung auf Port 1883, und die Verbindung
 zum Broker auf Port 9001 schlägt fehl.
+
+**Reloader öffnet den Sammler doppelt:** Liefe `app.run(debug=True)` mit
+eingeschaltetem Reloader, würde der `__main__`-Block bei jeder Code-Änderung ein
+zweites Mal laufen und ein zweiter MQTT-Thread entstehen. Darum
+`use_reloader=False`.
