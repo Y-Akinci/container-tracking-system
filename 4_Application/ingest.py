@@ -39,6 +39,8 @@ def on_message(client, userdata, message):
             print(f"Route gestartet: {current_route}")
         elif info.get("action") == "STOP":
             print(f"Route beendet: {current_route}")
+            # Route zurücksetzen, damit keine verspäteten Nachrichten gespeichert werden
+            current_route = None
         return
 
     if current_route is None:
@@ -57,22 +59,32 @@ def on_message(client, userdata, message):
     )
     print(f"Gespeichert: {daten['timestamp']} | {daten['temp']}°C")
 
-# DB / Tabelle wird erstellt
-init_db()
+def start_mqtt():
+    init_db() # DB / Tabelle wird erstellt
 
-# MQTT-Client ertsellen (Verbindungsobjekt)
-client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, protocol=mqtt.MQTTv5, transport="websockets")
+    # MQTT-Client ertsellen (Verbindungsobjekt)
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, protocol=mqtt.MQTTv5, transport="websockets")
+    
+    # Funktion on_connect & on_message mit MQTT-Client verknüpfen
+    client.on_connect = on_connect
+    client.on_message = on_message
 
-# Funktion on_connect & on_message mit MQTT-Client verknüpfen
-client.on_connect = on_connect
-client.on_message = on_message
+    # Verbindet den MQTT-Client mit dem Broker und wartet dauerhaft auf neue Nachrichten.
+    try:
+        print("Verbinde...")
+        client.connect(BROKER, PORT)
+        client.loop_forever()
 
-print("Verbinde...")
-client.connect(BROKER, PORT)
+    except KeyboardInterrupt:
+        # Wird ausgeführt, wenn das Programm mit Ctrl+C beendet wird.
+        print("\nBeendet.")
+        client.disconnect()
 
-# Startet Endlosschleife des MQTT-Clients
-try:
-    client.loop_forever()
-except KeyboardInterrupt:
-    print("\nBeendet.")
-    client.disconnect()
+    except Exception as e:
+        # Fängt andere Verbindungsfehler ab und gibt die Fehlermeldung aus.
+        print(f"MQTT-Verbindung fehlgeschlagen: {e}")
+
+# Nur ausführen, wenn ingest.py direkt gestartet wird
+if __name__ == "__main__":
+    init_db()
+    start_mqtt()
