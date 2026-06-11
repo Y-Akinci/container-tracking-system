@@ -1,7 +1,8 @@
 from datetime import datetime
-
 from flask import Flask
-from database import get_routes, get_route_points
+import threading
+from database import get_routes, get_route_points, init_db
+from ingest import start_mqtt
 import sys
 from pathlib import Path
 
@@ -55,4 +56,6 @@ def show_route(container, route):
     return karte._repr_html_()
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    init_db()
+    threading.Thread(target=start_mqtt, daemon=True).start()
+    app.run(debug=True, use_reloader=False)
