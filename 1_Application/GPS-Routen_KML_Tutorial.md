@@ -6,7 +6,8 @@ Im Rahmen von unserem Challenge-Modul CDE1 im Bachelor-Studiengang Data-Science 
 
 Für dieses Tutorial wurde folgender Lerninhalt definiert:
 
-**Lerninhalt:** Wie liest man strukturierte Sensordaten aus einer CSV-Datei aus, bewertet sie nach Kriterien (Temperatur, Luftfeuchtigkeit) und zeichnet die Route farbig auf einer Karte?
+**Lerninhalt:** 
+Wie liest man strukturierte Sensordaten aus einer CSV-Datei aus, bewertet sie nach Kriterien (Temperatur, Luftfeuchtigkeit) und zeichnet die Route farbig auf einer Karte?
 
 ---
 
@@ -21,6 +22,13 @@ Bevor du beginnst, solltest du folgende Grundkenntnisse in Python mitbringen:
 - **Ordnerstruktur:** Du weisst was ein Projektordner ist und wie Dateipfade funktionieren
 
 ---
+Neu in diesem Tutorial:
+
+- Strukturierte Sensordaten aus einer CSV-Datei einlesen
+- Daten nach Kriterien (Temperatur, Luftfeuchtigkeit) bewerten
+- GPS-Routen farbig auf einer Karte visualisieren mit `simplekml`
+- Virtuelle Umgebung mit `venv` einrichten
+- Packages installieren und verwalten mit `pip`
 
 ## Konzepte
 

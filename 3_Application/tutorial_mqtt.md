@@ -1,10 +1,15 @@
 # Python Tutorial: Live GPS-Daten empfangen mit MQTT
 
-Wir haben im Modul CDE1 ein Container-Tracking-System gebaut. Für App 3 mussten wir GPS-Daten nicht aus einer Datei lesen, sondern live empfangen während der Container fährt. Dafür haben wir MQTT verwendet. Dieses Tutorial erklärt was MQTT ist, warum wir es gewählt haben, und wie du den Code selbst nachbauen kannst.
+Für App 3 mussten wir GPS-Daten nicht aus einer Datei lesen, sondern live empfangen während der Container fährt. Dafür haben wir MQTT verwendet. Dieses Tutorial erklärt was MQTT ist, warum wir es gewählt haben, und wie du den Code selbst nachbauen kannst.
+
+**Lerninhalt:** 
+Wie empfängt man GPS-Daten live über MQTT, bewertet sie nach Kriterien (Temperatur, Luftfeuchtigkeit) und gibt den Status in Echtzeit im Terminal aus?
+
+---
 
 ## Voraussetzungen
 
-Du kennst bereits folgende Konzepte aus App 1:
+Du kennst bereits folgende Konzepte aus App 1 und 2:
 
 - Funktionen (`def`, `return`)
 - Listen und Dictionaries
@@ -17,6 +22,7 @@ Du kennst bereits folgende Konzepte aus App 1:
 - JSON als Datenformat
 - Interaktive Karten mit `folium`
 - Fehlerbehandlung mit `try/except`
+- Simulator
 
 Neu in diesem Tutorial:
 
@@ -25,16 +31,30 @@ Neu in diesem Tutorial:
 - Es erklärt paho-mqtt, die Topics migros/grp4/message und migros/grp4/state, sowie JSON-Parsing und Typumwandlung.
 - Wichtige Punkte sind WebSocket-Verbindung auf Port 9001 und typische Fehler wie falsches Topic oder fehlendes transport="websockets".
 ```
+---
 
-## Schritt 1: Was ist MQTT und warum haben wir es verwendet
+## Packages installieren
 
-### Das Problem mit HTTP
+```bash
+pip install paho-mqtt
+pip freeze > requirements.txt
+```
+
+`json` ist in Python eingebaut, kein `pip` nötig.
+
+---
+
+## Konzepte
+
+### Was ist MQTT und warum haben wir es verwendet
+
+#### Das Problem mit HTTP
 
 In App 1 haben wir eine fertige CSV-Datei gelesen. Die Daten waren schon da, wir mussten sie nur verarbeiten. Aber was wenn der Container noch fährt und wir die Daten live sehen wollen?
 
 Mit HTTP müsste unser Programm immer wieder beim Server anfragen: "Gibt es was Neues?" Das ist ineffizient, weil meistens die Antwort "nein" ist und trotzdem jedes Mal eine Verbindung aufgebaut wird.
 
-### Die Lösung: MQTT
+#### Die Lösung: MQTT
 
 MQTT ist ein Protokoll das für genau diesen Fall gebaut wurde, live Daten von Sensoren und Geräten übertragen. Es funktioniert nach dem Prinzip "publish und subscribe", also veröffentlichen und abonnieren.
 
@@ -44,7 +64,7 @@ Genau so funktioniert MQTT:
 
 Der Simulator ist der Sender. Er verbindet sich mit einem Broker und publiziert Daten auf einem Topic. Unser Monitor ist der Empfänger. Er verbindet sich mit demselben Broker und abonniert dasselbe Topic. Sobald der Simulator etwas schickt, bekommt der Monitor es sofort.
 
-### Was ist ein Broker?
+#### Was ist ein Broker?
 
 Der Broker ist der Mittelsmann. Er nimmt Nachrichten von Publishern entgegen und leitet sie an alle Subscriber weiter die das Topic abonniert haben. In unserem Projekt läuft der Broker auf dem Server des Dozenten:
 
@@ -53,7 +73,7 @@ fl-17-240.zhdk.cloud.switch.ch
 Port 9001 über WebSocket
 ```
 
-### Was ist ein Topic?
+#### Was ist ein Topic?
 
 Ein Topic ist wie eine Adresse für Nachrichten. Es ist ein Text mit Schrägstrichen als Trennzeichen, ähnlich wie ein Dateipfad. In unserem Projekt:
 
@@ -64,17 +84,11 @@ migros/grp4/state     <- hier kommen Start und Stop Meldungen an
 
 Das Format ist `{company}/{container}/{typ}`. So können viele verschiedene Container gleichzeitig laufen ohne sich zu stören.
 
-## Schritt 2: Das Package paho-mqtt
+---
+
+### Das Package paho-mqtt
 
 Wir hätten das MQTT-Protokoll von Hand implementieren können, aber das wäre sehr aufwändig. `paho-mqtt` ist das offizielle Python Package für MQTT und wird von der MQTT-Organisation selbst gepflegt.
-
-### Installation
-
-```bash
-pip install paho-mqtt
-```
-
-### Wie man es einbindet
 
 ```python
 import paho.mqtt.client as mqtt
@@ -82,11 +96,13 @@ import paho.mqtt.client as mqtt
 
 Wir importieren nur den `client` Teil des Packages, weil wir nur die Client-Funktionalität brauchen und nicht den ganzen Rest.
 
-## Schritt 3: Was der Simulator schickt
+---
+
+### Was der Simulator schickt
 
 Bevor wir den Monitor schreiben, müssen wir verstehen was der Simulator überhaupt schickt. Der Simulator liest eine GeoJSON-Datei mit GPS-Punkten, fügt Temperatur und Feuchtigkeit hinzu, und schickt für jeden Punkt eine JSON-Nachricht.
 
-### Das Nachrichtenformat
+#### Das Nachrichtenformat
 
 Für jeden GPS-Punkt schickt der Simulator eine Nachricht auf dem Topic `migros/grp4/message`:
 
@@ -107,7 +123,7 @@ Zusätzlich schickt er auf dem Topic `migros/grp4/state` eine Start-Meldung wenn
 {"timestamp": "2026-03-09 16:17:41", "action": "STOP",  "name": "olten-brugg"}
 ```
 
-### Was ist JSON?
+#### Was ist JSON?
 
 JSON ist ein Textformat für strukturierte Daten. Anders als CSV wo alles durch Kommas getrennt ist, hat JSON Schlüssel und Werte wie ein Python-Dictionary. In Python liest man JSON so:
 
@@ -121,15 +137,17 @@ print(daten["temp"])       # gibt "24" aus
 
 `json.loads()` verwandelt einen JSON-String in ein Python-Dictionary. Das "s" in `loads` steht für "string".
 
-## Schritt 4: Den Monitor aufbauen
+---
 
-### Callbacks, was sind das?
+### Den Monitor aufbauen
+
+#### Callbacks, was sind das?
 
 MQTT arbeitet mit sogenannten Callbacks. Das sind Funktionen die wir definieren und die automatisch aufgerufen werden wenn etwas passiert, zum Beispiel wenn eine Verbindung aufgebaut wird oder wenn eine Nachricht ankommt.
 
 Wir schreiben die Funktion, aber wir rufen sie nicht selbst auf. Wir sagen paho-mqtt: "Wenn eine Nachricht ankommt, ruf bitte diese Funktion auf." paho-mqtt kümmert sich um den Rest.
 
-### Verbindung aufbauen mit on_connect
+#### Verbindung aufbauen mit on_connect
 
 ```python
 def on_connect(client, userdata, flags, rc, properties=None):
@@ -145,7 +163,7 @@ Diese Funktion wird aufgerufen sobald die Verbindung zum Broker steht. `rc` steh
 
 Warum erst in `on_connect` und nicht vorher? Weil man Topics nur abonnieren kann wenn man bereits verbunden ist. Würde man es vorher tun, käme eine Fehlermeldung.
 
-### Nachrichten verarbeiten mit on_message
+#### Nachrichten verarbeiten mit on_message
 
 ```python
 def on_message(client, userdata, message):
@@ -162,7 +180,7 @@ def on_message(client, userdata, message):
 
 `message.payload` ist die rohe Nachricht als Bytes. Mit `.decode()` wird sie zu einem String. Dann schauen wir auf welchem Topic die Nachricht kam und reagieren entsprechend.
 
-### Nachrichten auslesen
+#### Nachrichten auslesen
 
 ```python
 def parse_message(raw):
@@ -178,7 +196,7 @@ def parse_message(raw):
 
 Wir parsen die JSON-Nachricht und wandeln die Werte in die richtigen Typen um. Temperatur und Feuchtigkeit kommen als Strings an, deshalb `float()`.
 
-### Warnstatus bestimmen
+#### Warnstatus bestimmen
 
 ```python
 def get_status(temp, humidity):
@@ -194,7 +212,7 @@ def get_status(temp, humidity):
 
 Diese Logik kennst du schon aus App 1. Dieselben Grenzwerte, dieselbe Struktur.
 
-### Ausgabe im Terminal
+#### Ausgabe im Terminal
 
 ```python
 def print_update(daten):
@@ -202,7 +220,9 @@ def print_update(daten):
     print(f"[{daten['timestamp']}]  Temp: {daten['temp']}°C  Feuchtigkeit: {daten['humidity']}%  ->  {status}")
 ```
 
-## Schritt 5: Client erstellen und verbinden
+---
+
+## Schritt 1: Client erstellen und verbinden
 
 ```python
 client = mqtt.Client(
@@ -236,9 +256,18 @@ except KeyboardInterrupt:
 
 `loop_forever()` startet eine Endlosschleife die auf neue Nachrichten wartet. Sie läuft bis wir Ctrl+C drücken. `KeyboardInterrupt` ist die Exception die Python wirft wenn Ctrl+C gedrückt wird. Wir fangen sie ab um das Programm sauber zu beenden.
 
-## Schritt 6: Den Simulator starten
+---
 
-Der Simulator liest eine GeoJSON-Datei und sendet die Punkte Schritt für Schritt an den Broker. Er braucht eine Config-Datei die sagt wohin er sich verbinden soll.
+## Schritt 2: Den Simulator starten
+
+Der Simulator befindet sich in unserem Repository unter `3_Application/Simulator_für_3_Application/` und ist bereits fertig — wir müssen ihn nur starten. Er liest eine GeoJSON-Datei und sendet die Punkte Schritt für Schritt über MQTT an den Broker.
+
+Die wichtigsten Werte in der Config sind fix für unsere Gruppe:
+- `company = migros` — unsere Organisation im Topic Pfad
+- `container = grp4` — unsere Gruppe, ergibt das Topic `migros/grp4/...`
+- `broker = fl-17-240.zhdk.cloud.switch.ch` — der Server des Dozenten
+
+Er braucht eine Config Datei die sagt wohin er sich verbinden soll.
 
 ### Config-Datei erstellen
 
@@ -279,7 +308,9 @@ python simulator.py --config config-switch-grp4.ini data/olten-brugg.geojson
 python mqtt_monitor.py
 ```
 
-## Schritt 7: Vollständiger Monitor-Code
+---
+
+## Schritt 3: Vollständiger Monitor-Code
 
 ```python
 import json
@@ -361,6 +392,8 @@ except KeyboardInterrupt:
     print("\nProgramm beendet.")
     client.disconnect()
 ```
+
+---
 
 ## Klassische Fehler aus unserer eigenen Erfahrung
 

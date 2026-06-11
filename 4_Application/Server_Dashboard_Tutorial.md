@@ -1,16 +1,12 @@
 # Python Tutorial: Eigener Server mit Datenbank und Dashboard
 
-In dieser vierten und letzten Applikation drehen wir das ganze Prinzip um. In
-App 1 bis 3 haben wir Daten **konsumiert**: aus einer CSV-Datei, von einem
-fremden Webserver, über MQTT. Jetzt bauen wir die andere Seite. App 4 empfängt
-die Live-Daten des Simulators, speichert sie dauerhaft in einer Datenbank und
-zeigt sie über unseren **eigenen** Webserver als Dashboard im Browser an.
+In dieser vierten und letzten Applikation drehen wir das ganze Prinzip um. In App 1 bis 3 haben wir Daten **konsumiert**: aus einer CSV-Datei, von einem fremden Webserver, über MQTT. Jetzt bauen wir die andere Seite. App 4 empfängt die Live-Daten des Simulators, speichert sie dauerhaft in einer Datenbank und zeigt sie über unseren **eigenen** Webserver als Dashboard im Browser an.
 
 > ![alt text](image.png)
 
 **Lerninhalt:**
-1. Wie speichert man laufend eintreffende Daten dauerhaft? Datenbank mit SQLite
-2. Wie stellt man eigene Daten im Browser bereit? Eigener Webserver mit Flask
+Wie speichert man laufend eintreffende Daten dauerhaft? Datenbank mit SQLite.
+Wie stellt man eigene Daten im Browser bereit? Eigener Webserver mit Flask.
 
 ---
 

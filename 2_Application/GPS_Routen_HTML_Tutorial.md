@@ -5,8 +5,8 @@ In dieser zweiten Applikation erweitern wir das bestehende Container-Tracking-Sy
 > ![alt text](image.png)
 
 **Lerninhalt:**
-1. Wie kommen Daten herein? User Input im Terminal und Abruf von einem Webserver
-2. Wie visualisiert man die Route? Interaktive HTML-Karte mit Folium
+Wie kommen Daten herein? User Input im Terminal und Abruf von einem Webserver.
+Wie visualisiert man die Route? Interaktive HTML-Karte mit Folium.
 
 ---
 
