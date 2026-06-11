@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from flask import Flask
 from database import get_routes, get_route_points
 import sys
@@ -23,8 +25,8 @@ def index():
     for row in routes:
         container = row[1]
         route = row[2]
-        start = row[3]
-        end = row[4]
+        start = datetime.fromisoformat(str(row[3])).strftime("%d.%m.%Y %H:%M") if row[3] else ""
+        end = datetime.fromisoformat(str(row[4])).strftime("%d.%m.%Y %H:%M") if row[4] else ""
         problem = row[5]
         status = '<span style="color:red">Temperaturproblem</span>' if problem else '<span style="color:green">OK</span>'
         
