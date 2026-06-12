@@ -250,9 +250,9 @@ except KeyboardInterrupt:
 Der Simulator befindet sich in unserem Repository unter `3_Application/Simulator_für_3_Application/` und ist bereits fertig — wir müssen ihn nur starten. Er liest eine GeoJSON-Datei und sendet die Punkte Schritt für Schritt über MQTT an den Broker.
 
 Die wichtigsten Werte in der Config sind fix für unsere Gruppe:
-- `company = migros` — unsere Organisation im Topic Pfad
-- `container = grp4` — unsere Gruppe, ergibt das Topic `migros/grp4/...`
-- `broker = fl-17-240.zhdk.cloud.switch.ch` — der Server des Dozenten
+- `company = migros`  unsere Organisation im Topic Pfad
+- `container = grp4`  unsere Gruppe, ergibt das Topic `migros/grp4/...`
+- `broker = fl-17-240.zhdk.cloud.switch.ch`  der Server des Dozenten
 
 Er braucht eine Config Datei die sagt wohin er sich verbinden soll.
 
