@@ -94,34 +94,39 @@ Package installieren
 bashpip install paho-mqtt
 pip freeze > requirements.txt
 
-Einbinden im Code:
+```python
+import paho.mqtt.client as mqtt
+```
 
-pythonimport paho.mqtt.client as mqtt
+Wir importieren nur den `client` Teil des Packages, weil wir nur die Client-Funktionalität brauchen.
 
-Wir importieren nur den client Teil des Packages, weil wir nur die Client-Funktionalität brauchen.
+## Was der Simulator schickt
 
-Was der Simulator schickt
+Bevor wir den Monitor schreiben, müssen wir verstehen was der Simulator sendet. Für jeden GPS-Punkt schickt er eine JSON-Nachricht auf dem Topic `migros/grp4/message`:
 
-Bevor wir den Monitor schreiben, müssen wir verstehen was der Simulator sendet. Für jeden GPS-Punkt schickt er eine JSON-Nachricht auf dem Topic migros/grp4/message:
-
-json{
+```json
+{
     "timestamp": "2026-03-09 14:35:56",
     "lat": 47.3529356,
     "lon": 7.90754156,
     "temp": "24",
     "hum": "72"
 }
+```
 
-Zusätzlich schickt er auf dem Topic migros/grp4/state eine Start- und eine Stop-Meldung:
+Zusätzlich schickt er auf dem Topic `migros/grp4/state` eine Start- und eine Stop-Meldung:
 
-json{"timestamp": "2026-03-09 14:35:56", "action": "START", "name": "olten-brugg"}
+```json
+{"timestamp": "2026-03-09 14:35:56", "action": "START", "name": "olten-brugg"}
 {"timestamp": "2026-03-09 16:17:41", "action": "STOP",  "name": "olten-brugg"}
+```
 
-Schritt 1: Konstanten definieren
+## Schritt 1: Konstanten definieren
 
 Ganz oben im Script legen wir alle fixen Werte fest, damit wir sie nur an einem Ort ändern müssen:
 
-pythonimport json
+```python
+import json
 import paho.mqtt.client as mqtt
 
 BROKER             = "fl-17-240.zhdk.cloud.switch.ch"
@@ -130,12 +135,14 @@ TOPIC_MSG          = "migros/grp4/message"
 TOPIC_STATE        = "migros/grp4/state"
 TEMP_GRENZWERT     = 25
 HUMIDITY_GRENZWERT = 80
+```
 
-Schritt 2: Nachrichten parsen
+## Schritt 2: Nachrichten parsen
 
-message.payload kommt als Bytes an. Mit .decode() wird es ein String, mit json.loads() ein Dictionary. Temperatur und Feuchtigkeit kommen als Strings an, deshalb float():
+`message.payload` kommt als Bytes an. Mit `.decode()` wird es ein String, mit `json.loads()` ein Dictionary. Temperatur und Feuchtigkeit kommen als Strings an, deshalb `float()`:
 
-pythondef parse_message(raw):
+```python
+def parse_message(raw):
     daten = json.loads(raw)
     return {
         "timestamp": daten["timestamp"],
@@ -144,12 +151,14 @@ pythondef parse_message(raw):
         "temp":      float(daten["temp"]),
         "humidity":  float(daten["hum"]),
     }
+```
 
-Schritt 3: Warnstatus bestimmen
+## Schritt 3: Warnstatus bestimmen
 
 Die Logik ist dieselbe wie in App 1. Dieselben Grenzwerte, dieselbe Struktur:
 
-pythondef get_status(temp, humidity):
+```python
+def get_status(temp, humidity):
     if temp >= TEMP_GRENZWERT and humidity >= HUMIDITY_GRENZWERT:
         return "WARNUNG: Temperatur UND Feuchtigkeit zu hoch!"
     elif temp >= TEMP_GRENZWERT:
@@ -158,20 +167,24 @@ pythondef get_status(temp, humidity):
         return "WARNUNG: Feuchtigkeit zu hoch!"
     else:
         return "OK"
+```
 
-Schritt 4: Ausgabe im Terminal
+## Schritt 4: Ausgabe im Terminal
 
-pythondef print_update(daten):
+```python
+def print_update(daten):
     status = get_status(daten["temp"], daten["humidity"])
     print(f"[{daten['timestamp']}]  Temp: {daten['temp']}°C  Feuchtigkeit: {daten['humidity']}%  ->  {status}")
+```
 
-Schritt 5: Callbacks definieren
+## Schritt 5: Callbacks definieren
 
 MQTT arbeitet mit Callbacks. Das sind Funktionen die wir definieren, aber nicht selbst aufrufen. Wir sagen paho-mqtt: "Wenn eine Verbindung aufgebaut wird, ruf diese Funktion auf." paho-mqtt kümmert sich um den Rest.
 
-on_connect wird aufgerufen sobald die Verbindung zum Broker steht. Erst dann abonnieren wir die Topics, weil man Topics nur abonnieren kann wenn man bereits verbunden ist:
+`on_connect` wird aufgerufen sobald die Verbindung zum Broker steht. Erst dann abonnieren wir die Topics, weil man Topics nur abonnieren kann wenn man bereits verbunden ist:
 
-pythondef on_connect(client, userdata, flags, rc, properties=None):
+```python
+def on_connect(client, userdata, flags, rc, properties=None):
     if rc == 0:
         print(f"Verbunden mit {BROKER}")
         print(f"Höre auf: {TOPIC_MSG}")
@@ -180,10 +193,12 @@ pythondef on_connect(client, userdata, flags, rc, properties=None):
         client.subscribe(TOPIC_STATE)
     else:
         print(f"Verbindung fehlgeschlagen, Code: {rc}")
+```
 
-on_message wird aufgerufen sobald eine Nachricht ankommt. Wir schauen zuerst auf welchem Topic sie ankam und reagieren entsprechend:
+`on_message` wird aufgerufen sobald eine Nachricht ankommt. Wir schauen zuerst auf welchem Topic sie ankam und reagieren entsprechend:
 
-pythondef on_message(client, userdata, message):
+```python
+def on_message(client, userdata, message):
     raw = message.payload.decode()
 
     if message.topic == TOPIC_STATE:
@@ -193,18 +208,20 @@ pythondef on_message(client, userdata, message):
 
     daten = parse_message(raw)
     print_update(daten)
+```
 
-Schritt 6: Client erstellen und verbinden
+## Schritt 6: Client erstellen und verbinden
 
 Hier sind drei Dinge wichtig:
 
-CallbackAPIVersion.VERSION2 sagt paho-mqtt welche Version der Callback-Schnittstelle wir verwenden. Das muss zur installierten Version des Packages passen.
+`CallbackAPIVersion.VERSION2` sagt paho-mqtt welche Version der Callback-Schnittstelle wir verwenden. Das muss zur installierten Version des Packages passen.
 
-protocol=mqtt.MQTTv5 gibt die MQTT-Protokollversion an. Version 5 ist die aktuelle.
+`protocol=mqtt.MQTTv5` gibt die MQTT-Protokollversion an. Version 5 ist die aktuelle.
 
-transport="websockets" ist entscheidend. Unser Broker ist über Port 9001 erreichbar, aber nur über WebSocket. Ohne diesen Parameter versucht paho-mqtt eine direkte TCP-Verbindung auf Port 1883, was nicht funktioniert.
+`transport="websockets"` ist entscheidend. Unser Broker ist über Port 9001 erreichbar, aber nur über WebSocket. Ohne diesen Parameter versucht paho-mqtt eine direkte TCP-Verbindung auf Port 1883, was nicht funktioniert.
 
-pythonclient = mqtt.Client(
+```python
+client = mqtt.Client(
     mqtt.CallbackAPIVersion.VERSION2,
     protocol=mqtt.MQTTv5,
     transport="websockets"
@@ -220,18 +237,20 @@ try:
 except KeyboardInterrupt:
     print("\nProgramm beendet.")
     client.disconnect()
+```
 
-loop_forever() startet eine Endlosschleife die auf neue Nachrichten wartet. Sie läuft bis wir Ctrl+C drücken. KeyboardInterrupt ist die Exception die Python wirft wenn Ctrl+C gedrückt wird. Wir fangen sie ab um das Programm sauber zu beenden.
+`loop_forever()` startet eine Endlosschleife die auf neue Nachrichten wartet. Sie läuft bis wir Ctrl+C drücken. `KeyboardInterrupt` ist die Exception die Python wirft wenn Ctrl+C gedrückt wird. Wir fangen sie ab um das Programm sauber zu beenden.
 
-Schritt 7: Simulator starten
+## Schritt 7: Simulator starten
 
 Den Simulator musst du nicht selbst schreiben. Er ist bereits fertig im Repository enthalten und wird dir zusammen mit diesem Tutorial mitgeliefert. Wie er intern funktioniert, wird weiter unten im Abschnitt "Wie der Simulator funktioniert" erklärt.
 
-Der Simulator befindet sich unter 3_Application/Simulator_für_3_Application/. Er liest eine GeoJSON-Datei und sendet die Punkte Schritt für Schritt über MQTT an den Broker.
+Der Simulator befindet sich unter `3_Application/Simulator_für_3_Application/`. Er liest eine GeoJSON-Datei und sendet die Punkte Schritt für Schritt über MQTT an den Broker.
 
-Die Config-Datei config-switch-grp4.ini ist bereits im Ordner vorhanden. Die wichtigsten Werte darin:
+Die Config-Datei `config-switch-grp4.ini` ist bereits im Ordner vorhanden. Die wichtigsten Werte darin:
 
-ini[DEFAULT]
+```ini
+[DEFAULT]
 company = migros
 container = grp4
 
@@ -243,22 +262,28 @@ transport = websockets
 [simulation]
 profile = 0.0,24,72;0.2,25,70;0.4,26.5,65;0.7,27,80;0.9,27.5,75
 clock-rate = 0.01
+```
 
-profile beschreibt wie sich Temperatur und Feuchtigkeit über die Route verändern. Das Format ist position,temperatur,feuchtigkeit, wobei die Position ein Wert zwischen 0.0 (Start) und 1.0 (Ende) ist. clock-rate = 0.01 bedeutet 0.01 Sekunden zwischen jedem Punkt, damit die Demo schnell durchläuft.
+`profile` beschreibt wie sich Temperatur und Feuchtigkeit über die Route verändern. Das Format ist `position,temperatur,feuchtigkeit`, wobei die Position ein Wert zwischen 0.0 (Start) und 1.0 (Ende) ist. `clock-rate = 0.01` bedeutet 0.01 Sekunden zwischen jedem Punkt, damit die Demo schnell durchläuft.
 
 Simulator starten:
 
-bashcd "3_Application/Simulator_für_3_Application"
+```bash
+cd "3_Application/Simulator_für_3_Application"
 python simulator.py --config config-switch-grp4.ini data/olten-brugg.geojson
+```
 
 Monitor in einem zweiten Terminal starten:
 
-bashcd 3_Application
+```bash
+cd 3_Application
 python mqtt_monitor.py
+```
 
-Vollständiger Code
+## Vollständiger Code
 
-pythonimport json
+```python
+import json
 import paho.mqtt.client as mqtt
 
 BROKER             = "fl-17-240.zhdk.cloud.switch.ch"
@@ -335,7 +360,7 @@ try:
 except KeyboardInterrupt:
     print("\nProgramm beendet.")
     client.disconnect()
-
+```
 ---
 
 ## Klassische Fehler aus unserer eigenen Erfahrung
