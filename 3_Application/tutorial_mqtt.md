@@ -110,6 +110,11 @@ Zusätzlich schickt er auf dem Topic `migros/grp4/state` eine Start- und eine St
 {"timestamp": "2026-03-09 14:35:56", "action": "START", "name": "olten-brugg"}
 {"timestamp": "2026-03-09 16:17:41", "action": "STOP",  "name": "olten-brugg"}
 ```
+
+## Schritt 1: Konstanten/Packages definieren
+
+Ganz oben im Script legen wir alle fixen Werte fest, damit wir sie nur an einem Ort ändern müssen:
+
 ---
 Package installieren
 
@@ -120,10 +125,6 @@ pip freeze > requirements.txt
 import paho.mqtt.client as mqtt
 ```
 ---
-## Schritt 1: Konstanten definieren
-
-Ganz oben im Script legen wir alle fixen Werte fest, damit wir sie nur an einem Ort ändern müssen:
-
 ```python
 import json
 import paho.mqtt.client as mqtt
