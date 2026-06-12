@@ -126,22 +126,6 @@ Zusätzlich schickt er auf dem Topic `migros/grp4/state` eine Start-Meldung wenn
 {"timestamp": "2026-03-09 16:17:41", "action": "STOP",  "name": "olten-brugg"}
 ```
 
-#### Was ist JSON?
-
-JSON ist ein Textformat für strukturierte Daten. Anders als CSV wo alles durch Kommas getrennt ist, hat JSON Schlüssel und Werte wie ein Python-Dictionary. In Python liest man JSON so:
-
-```python
-import json
-
-text = '{"temp": "24", "hum": "72"}'
-daten = json.loads(text)   # Text zu Dictionary
-print(daten["temp"])       # gibt "24" aus
-```
-
-`json.loads()` verwandelt einen JSON-String in ein Python-Dictionary. Das "s" in `loads` steht für "string".
-
----
-
 ### Den Monitor aufbauen
 
 #### Callbacks, was sind das?
