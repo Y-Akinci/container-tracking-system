@@ -62,7 +62,7 @@ container-tracking-system/
 │
 ├── 1_Application/              # App 1: CSV zu KML
 │   ├── csv_to_kml.py
-│   ├── olten-brugg (2).csv
+│   ├── olten-brugg.csv
 │   └── requirements.txt
 │
 ├── 2_Application/              # App 2: HTTP zu Folium-Karte
