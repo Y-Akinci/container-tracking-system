@@ -115,10 +115,9 @@ Stell dir eine Excel-Tabelle vor: Spalten (Zeitstempel, Lat, Lon, Temp, Hum,
 Container, Route) und eine Zeile pro GPS-Punkt. Die Sprache zum Befragen heisst
 **SQL**.
 
-### SQL in vier Sätzen
+### SQL in ein paar Sätzen
 
-Mehr SQL als das siehst du in der ganzen App nicht. Es liest sich fast wie
-Englisch:
+Mehr SQL als das siehst du in der ganzen App nicht. Es liest sich fast wie Englisch:
 
 ```sql
 CREATE TABLE messages (...)              -- lege eine Tabelle mit Spalten an
@@ -128,8 +127,7 @@ SELECT DISTINCT container FROM messages  -- gib mir die Container, jeden nur ein
 SELECT * FROM messages WHERE temp >= 25  -- gib mir nur die zu warmen Zeilen
 ```
 
-`DISTINCT` filtert Duplikate, `WHERE` filtert nach einer Bedingung, genau das
-brauchen wir fürs Dashboard.
+`DISTINCT` filtert Duplikate, `WHERE` filtert nach einer Bedingung, genau das brauchen wir fürs Dashboard.
 
 ### Was ist Flask?
 
@@ -406,8 +404,6 @@ def on_message(client, userdata, message):
     )
     print(f"Gespeichert: {daten['timestamp']} | {daten['temp']}°C")
 ```
-
-Vier Stellen lohnen den Blick:
 
 **`global current_route`**: diese Funktion wird von paho-mqtt aufgerufen, nicht
 von uns. Damit sie die äussere Variable verändern kann, muss `global` dastehen.
