@@ -180,7 +180,7 @@ import simplekml
 import webbrowser
 
 SCRIPT_DIR = Path(__file__).parent
-CSV_PATH = SCRIPT_DIR / "olten-brugg (2).csv"
+CSV_PATH = SCRIPT_DIR / "olten-brugg.csv"
 KML_PATH = SCRIPT_DIR / "olten-brugg.kml"
 ```
 
