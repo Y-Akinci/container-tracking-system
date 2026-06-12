@@ -319,5 +319,3 @@ if __name__ == "__main__":
 **`response.json()` statt `response.text`:** Bei den ersten zwei Endpunkten kommt JSON zurück ->`response.json()` verwenden. Bei der CSV kommt Text zurück -> `response.text` verwenden. Verwechslung führt zu einem Fehler.
 
 **Dictionary-Schlüssel vergessen:** `response.json()` gibt ein Dictionary zurück, keine Liste. Ohne `["containers"]` bekommst du das ganze Dictionary statt der Liste der Container.
-
-**Koordinatenreihenfolge:** Folium erwartet `(latitude, longitude)`. KML in App 1 erwartete `(longitude, latitude)`. `build_segments` in `utils.py` gibt `(latitude, longitude)` zurück, passt also direkt zu Folium.
