@@ -88,7 +88,7 @@ migros/grp4/state     <- hier kommen Start und Stop Meldungen an
 Das Format ist `{company}/{container}/{typ}`. So können viele verschiedene Container gleichzeitig laufen ohne sich zu stören.
 
 ---
-Wir importieren nur den `client` Teil des Packages, weil wir nur die Client-Funktionalität brauchen.
+
 
 #### Was der Simulator schickt
 
@@ -114,7 +114,7 @@ Zusätzlich schickt er auf dem Topic `migros/grp4/state` eine Start- und eine St
 ## Schritt 1: Konstanten/imports definieren
 
 Ganz oben im Script legen wir alle fixen Werte fest, damit wir sie nur an einem Ort ändern müssen:
-
+Wir importieren nur den `client` Teil des Packages, weil wir nur die Client-Funktionalität brauchen.
 
 ```python
 import paho.mqtt.client as mqtt
