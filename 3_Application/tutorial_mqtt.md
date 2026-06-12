@@ -31,11 +31,10 @@ Neu in diesem Tutorial:
 - Es erklärt paho-mqtt, die Topics migros/grp4/message und migros/grp4/state, sowie JSON-Parsing und Typumwandlung.
 - Wichtige Punkte sind WebSocket-Verbindung auf Port 9001 und typische Fehler wie falsches Topic oder fehlendes transport="websockets".
 
-## Voraussetzungen
+## Packages installieren
 ```
 ---
-
-## Packages installieren
+## 
 
 ```bash
 pip install paho-mqtt
