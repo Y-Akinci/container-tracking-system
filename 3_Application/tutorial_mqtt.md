@@ -90,7 +90,7 @@ Das Format ist `{company}/{container}/{typ}`. So können viele verschiedene Cont
 ---
 Wir importieren nur den `client` Teil des Packages, weil wir nur die Client-Funktionalität brauchen.
 
-### Was der Simulator schickt
+#### Was der Simulator schickt
 
 Bevor wir den Monitor schreiben, müssen wir verstehen was der Simulator sendet. Für jeden GPS-Punkt schickt er eine JSON-Nachricht auf dem Topic `migros/grp4/message`:
 
@@ -111,15 +111,10 @@ Zusätzlich schickt er auf dem Topic `migros/grp4/state` eine Start- und eine St
 {"timestamp": "2026-03-09 16:17:41", "action": "STOP",  "name": "olten-brugg"}
 ```
 
-## Schritt 1: Konstanten/Packages definieren
+## Schritt 1: Konstanten/imports definieren
 
 Ganz oben im Script legen wir alle fixen Werte fest, damit wir sie nur an einem Ort ändern müssen:
 
----
-Package installieren
-
-bashpip install paho-mqtt
-pip freeze > requirements.txt
 
 ```python
 import paho.mqtt.client as mqtt
