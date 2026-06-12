@@ -193,6 +193,10 @@ python app.py
 | `/` | Übersicht aller empfangenen Routen mit Status |
 | `/route/<container>/<route>` | Interaktive Folium-Karte der gewählten Route |
 
+Um *live* Routen einzuspeisen und aktiv darzustellen, kann man, wie in App 3, in einem zweiten Terminal den Simulator laufen lassen (Befehl siehe App 3)
+
+Der Simulator sendet die GPS-Punkte über MQTT, der Ingest-Thread in app.py speichert sie, und beim Neuladen des Dashboards erscheint die neue Route. Läuft kein Simulator, bleibt der Ingest-Thread still, das Dashboard funktioniert weiterhin mit den vorhandenen Daten.
+
 Der MQTT-Broker läuft unter `fl-17-240.zhdk.cloud.switch.ch` auf Port 9001 über WebSocket. Eine aktive Internetverbindung ist erforderlich.
 
 ## Gemeinsame Hilfsfunktionen (utils.py)
