@@ -11,7 +11,7 @@ Das System besteht aus vier Applikationen, die aufeinander aufbauen:
 | App 1 | GPS-Route aus CSV visualisieren | Lokale CSV-Datei | KML-Datei |
 | App 2 | GPS-Route interaktiv visualisieren | REST-API (HTTP) | HTML-Karte |
 | App 3 | Live GPS-Daten empfangen und anzeigen | MQTT-Broker | Terminal-Ausgabe |
-| App 4 | Live GPS-Daten empfangen und speichern | MQTT-Broker | SQLite-Datenbank + Flask-API |
+| App 4 | Live GPS-Daten empfangen, speichern und visualisieren | MQTT-Broker | SQLite-Datenbank + Flask-Dashboard |
 
 ### Farbkodierung der Route
 
@@ -35,7 +35,7 @@ Alle Applikationen verwenden dieselbe Bewertungslogik:
 ### 1. Repository klonen
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/Y-Akinci/container-tracking-system
 cd container-tracking-system
 ```
 
@@ -58,7 +58,7 @@ Du erkennst die aktive Umgebung am `(.venv)`-Präfix in der Eingabezeile.
 ```
 container-tracking-system/
 │
-├── utils.py                    # Gemeinsame Hilfsfunktionen (build_segments)
+├── utils.py                    # Gemeinsame Hilfsfunktionen (build_segments, get_color)
 │
 ├── 1_Application/              # App 1: CSV zu KML
 │   ├── csv_to_kml.py
@@ -75,91 +75,88 @@ container-tracking-system/
 │   └── Simulator_für 3_Application/
 │       ├── simulator.py
 │       ├── config-switch-grp4.ini
+│       ├── data/
+│       │   └── *.geojson
 │       └── requirements.txt
 │
-└── 4_Application/              # App 4: MQTT-Ingest + Flask-API
+└── 4_Application/              # App 4: MQTT-Ingest + Flask-Dashboard
     ├── app.py
     ├── ingest.py
     ├── database.py
-    └── requirements.txt        # noch ausstehend
+    └── requirements.txt
 ```
+
 ## Applikationen
 
-### App 1 — GPS-Route aus CSV visualisieren (KML)
+### App 1: GPS-Route aus CSV visualisieren (KML)
 
 Liest eine lokale CSV-Datei mit GPS-Koordinaten, Temperatur und Luftfeuchtigkeit, bewertet jeden Punkt und erzeugt eine farbige KML-Datei.
 
-**Installation:**
-
-```bash
-cd 1_Application
-pip install -r requirements.txt
-```
-
-Abhängigkeiten (`requirements.txt`):
+Abhängigkeiten (`1_Application/requirements.txt`):
 
 ```
 simplekml==1.3.6
 ```
 
-**Ausführen:**
+Installation und Ausführung:
 
 ```bash
+cd 1_Application
+pip install -r requirements.txt
 python csv_to_kml.py
 ```
 
-Die KML-Datei `olten-brugg.kml` wird im selben Ordner gespeichert. Der Browser öffnet sich automatisch auf kmlviewer.nsspot.net, dort die Datei hochladen.
+Die KML-Datei `olten-brugg.kml` wird im Ordner `1_Application/` gespeichert. Der Browser öffnet sich automatisch auf kmlviewer.nsspot.net, dort die Datei hochladen, um die Route anzuzeigen.
 
-### App 2 — GPS-Route interaktiv visualisieren (Folium)
+### App 2: GPS-Route interaktiv visualisieren (Folium)
 
 Ruft GPS-Daten von einem REST-Server ab. Der Benutzer wählt im Terminal Container und Route aus. Die Route wird als interaktive HTML-Karte im Browser geöffnet.
 
-**Installation:**
-
-```bash
-cd 2_Application
-pip install -r requirements.txt
-```
-
-Abhängigkeiten (`requirements.txt`):
+Abhängigkeiten (`2_Application/requirements.txt`):
 
 ```
 requests==2.32.5
 folium==0.20.0
 ```
 
-**Ausführen:**
+Installation und Ausführung:
 
 ```bash
+cd 2_Application
+pip install -r requirements.txt
 python route_visualization_html.py
 ```
 
-Der Server läuft unter `https://fl-17-240.zhdk.cloud.switch.ch`. Eine aktive Internetverbindung ist erforderlich.
+Der REST-Server läuft unter `https://fl-17-240.zhdk.cloud.switch.ch`. Eine aktive Internetverbindung ist erforderlich.
 
-### App 3 — Live GPS-Daten empfangen (MQTT-Monitor)
+### App 3: Live GPS-Daten empfangen (MQTT-Monitor)
 
 Empfängt GPS-Daten in Echtzeit über MQTT und zeigt Warnungen im Terminal an, wenn Temperatur- oder Feuchtigkeitsgrenzwerte überschritten werden.
 
-**Installation (Monitor):**
+App 3 besteht aus zwei Teilen, die in zwei separaten Terminals gestartet werden: dem Monitor und dem Simulator.
 
-```bash
-cd 3_Application
-pip install -r requirements.txt
-```
+**Monitor** (Terminal 1):
 
-Abhängigkeiten (`requirements.txt`):
+Abhängigkeiten (`3_Application/requirements.txt`):
 
 ```
 paho-mqtt==2.0.0
 ```
 
-**Monitor starten:**
-
 ```bash
+cd 3_Application
+pip install -r requirements.txt
 python mqtt_monitor.py
 ```
 
-**Simulator starten** (separates Terminal):
+**Simulator** (Terminal 2):
+
+Abhängigkeiten (`3_Application/Simulator_für 3_Application/requirements.txt`):
+
+```
+paho-mqtt==2.0.0
+requests==2.31.0
+```
 
 ```bash
 cd "3_Application/Simulator_für 3_Application"
@@ -167,45 +164,46 @@ pip install -r requirements.txt
 python simulator.py --config config-switch-grp4.ini data/olten-brugg.geojson
 ```
 
-Abhängigkeiten Simulator (`requirements.txt`):
-
-```
-paho-mqtt==2.0.0
-requests==2.31.0
-```
-
 Der MQTT-Broker läuft unter `fl-17-240.zhdk.cloud.switch.ch` auf Port 9001 über WebSocket. Eine aktive Internetverbindung ist erforderlich.
 
-### App 4 — MQTT-Ingest und Flask-API (in Entwicklung)
+### App 4: MQTT-Ingest und Flask-Dashboard
 
-Empfängt Live-Daten über MQTT, speichert sie in einer SQLite-Datenbank und stellt sie über eine Flask-API zur Verfügung.
+Empfängt Live-Daten über MQTT, speichert sie in einer SQLite-Datenbank (`tracking.db`) und stellt sie über ein Flask-Dashboard mit interaktiver Folium-Karte zur Verfügung.
 
-**Installation:**
+Abhängigkeiten (`4_Application/requirements.txt`):
+
+```
+paho-mqtt==2.1.0
+Flask==3.1.3
+folium==0.20.0
+```
+
+Installation und Ausführung:
 
 ```bash
 cd 4_Application
 pip install -r requirements.txt
-```
-
-**Datenbank-Ingest starten:**
-
-```bash
-python ingest.py
-```
-
-**Flask-Server starten** (separates Terminal):
-
-```bash
 python app.py
 ```
 
-Die API ist erreichbar unter `http://localhost:5000`.
+`app.py` startet gleichzeitig den MQTT-Ingest-Thread und den Flask-Webserver. Das Dashboard ist erreichbar unter `http://localhost:5000`.
 
-## Gemeinsame Hilfsfunktionen
+| Endpunkt | Beschreibung |
+|----------|-------------|
+| `/` | Übersicht aller empfangenen Routen mit Status |
+| `/route/<container>/<route>` | Interaktive Folium-Karte der gewählten Route |
 
-Die Datei `utils.py` im Wurzelverzeichnis enthält die Funktion `build_segments`, die von App 1 und App 2 gemeinsam genutzt wird. Sie gruppiert aufeinanderfolgende GPS-Punkte mit gleicher Farbe zu Segmenten.
+Um *live* Routen einzuspeisen und aktiv darzustellen, kann man, wie in App 3, in einem zweiten Terminal den Simulator laufen lassen (Befehl siehe App 3)
 
-Damit Python diese Datei findet, fügen App 1 und App 2 den übergeordneten Ordner zum Suchpfad hinzu:
+Der Simulator sendet die GPS-Punkte über MQTT, der Ingest-Thread in app.py speichert sie, und beim Neuladen des Dashboards erscheint die neue Route. Läuft kein Simulator, bleibt der Ingest-Thread still, das Dashboard funktioniert weiterhin mit den vorhandenen Daten.
+
+Der MQTT-Broker läuft unter `fl-17-240.zhdk.cloud.switch.ch` auf Port 9001 über WebSocket. Eine aktive Internetverbindung ist erforderlich.
+
+## Gemeinsame Hilfsfunktionen (utils.py)
+
+Die Datei `utils.py` im Wurzelverzeichnis enthält die Funktion `build_segments`, die von App 1, App 2 und App 4 gemeinsam genutzt wird. Sie gruppiert aufeinanderfolgende GPS-Punkte mit gleicher Farbe zu Liniensegmenten.
+
+Damit Python diese Datei findet, fügen die jeweiligen Skripte den übergeordneten Ordner zum Suchpfad hinzu:
 
 ```python
 import sys
@@ -216,68 +214,8 @@ from utils import build_segments
 
 ## Bekannte Einschränkungen
 
-- App 2, 3 und 4 benötigen eine Verbindung zum Server `fl-17-240.zhdk.cloud.switch.ch`. Ohne Verbindung starten die Applikationen nicht.
-- App 4 ist noch nicht vollständig implementiert.
-- Für App 1 muss die CSV-Datei manuell im Ordner `1_Application/` abgelegt werden.
+- App 2, 3 und 4 benötigen eine aktive Verbindung zum Server `fl-17-240.zhdk.cloud.switch.ch`. Ohne Verbindung starten die Applikationen nicht.
 
-**Installation:**
 
-```bash
-cd 2_Application
-pip install -r requirements.txt
-```
 
-Abhängigkeiten (`requirements.txt`):
 
-```
-requests==2.32.5
-folium==0.20.0
-```
-
-**Ausführen:**
-
-```bash
-python route_visualization_html.py
-```
-
-Der Server läuft unter `https://fl-17-240.zhdk.cloud.switch.ch`. Eine aktive Internetverbindung ist erforderlich.
-
-### App 3 — Live GPS-Daten empfangen (MQTT-Monitor)
-
-Empfängt GPS-Daten in Echtzeit über MQTT und zeigt Warnungen im Terminal an, wenn Temperatur- oder Feuchtigkeitsgrenzwerte überschritten werden.
-
-**Installation (Monitor):**
-
-```bash
-cd 3_Application
-pip install -r requirements.txt
-```
-
-Abhängigkeiten (`requirements.txt`):
-
-```
-paho-mqtt==2.0.0
-```
-
-**Monitor starten:**
-
-```bash
-python mqtt_monitor.py
-```
-
-**Simulator starten** (separates Terminal):
-
-```bash
-cd "3_Application/Simulator_für 3_Application"
-pip install -r requirements.txt
-python simulator.py --config config-switch-grp4.ini data/olten-brugg.geojson
-```
-
-Abhängigkeiten Simulator (`requirements.txt`):
-
-```
-paho-mqtt==2.0.0
-requests==2.31.0
-```
-
-Der MQTT-Broker läuft unter `fl-17-240.zhdk.cloud.switch.ch` auf Port 9001 über WebSocket. Eine aktive Internetverbindung ist erforderlich.
