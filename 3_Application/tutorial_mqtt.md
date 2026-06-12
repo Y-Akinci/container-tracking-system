@@ -89,18 +89,6 @@ Das Format ist `{company}/{container}/{typ}`. So können viele verschiedene Cont
 
 ---
 
-### Das Package paho-mqtt
-
-Wir hätten das MQTT-Protokoll von Hand implementieren können, aber das wäre sehr aufwändig. `paho-mqtt` ist das offizielle Python Package für MQTT und wird von der MQTT-Organisation selbst gepflegt.
-
-```python
-import paho.mqtt.client as mqtt
-```
-
-Wir importieren nur den `client` Teil des Packages, weil wir nur die Client-Funktionalität brauchen und nicht den ganzen Rest.
-
----
-
 ### Was der Simulator schickt
 
 Bevor wir den Monitor schreiben, müssen wir verstehen was der Simulator überhaupt schickt. Der Simulator liest eine GeoJSON-Datei mit GPS-Punkten, fügt Temperatur und Feuchtigkeit hinzu, und schickt für jeden Punkt eine JSON-Nachricht.
@@ -126,7 +114,19 @@ Zusätzlich schickt er auf dem Topic `migros/grp4/state` eine Start-Meldung wenn
 {"timestamp": "2026-03-09 16:17:41", "action": "STOP",  "name": "olten-brugg"}
 ```
 
-### Den Monitor aufbauen
+## Den Monitor aufbauen
+
+### Das Package paho-mqtt
+
+Wir hätten das MQTT-Protokoll von Hand implementieren können, aber das wäre sehr aufwändig. `paho-mqtt` ist das offizielle Python Package für MQTT und wird von der MQTT-Organisation selbst gepflegt.
+
+```python
+import paho.mqtt.client as mqtt
+```
+
+Wir importieren nur den `client` Teil des Packages, weil wir nur die Client-Funktionalität brauchen und nicht den ganzen Rest.
+
+---
 
 #### Callbacks, was sind das?
 
