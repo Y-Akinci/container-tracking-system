@@ -2,6 +2,8 @@
 
 Für App 3 mussten wir GPS-Daten nicht aus einer Datei lesen, sondern live empfangen während der Container fährt. Dafür haben wir MQTT verwendet. Dieses Tutorial erklärt was MQTT ist, warum wir es gewählt haben, und wie du den Code selbst nachbauen kannst.
 
+Die Live-Daten liefert dabei ein Simulator: ein bereits fertiges Programm, das uns im Repository vorliegt. Er liest eine Streckendatei und sendet ihre GPS-Punkte über MQTT, als würde ein echter Container die Route fahren. Unsere Aufgabe ist die Empfängerseite, der Monitor.
+
 **Lerninhalt:** 
 Wie empfängt man GPS-Daten live über MQTT, bewertet sie nach Kriterien (Temperatur, Luftfeuchtigkeit) und gibt den Status in Echtzeit im Terminal aus?
 
