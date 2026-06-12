@@ -238,9 +238,7 @@ except KeyboardInterrupt:
 
 ## Schritt 7: Simulator starten
 
-Den Simulator musst du nicht selbst schreiben. Er ist bereits fertig im Repository(https://github.com/Y-Akinci/container-tracking-system) enthalten und wird dir zusammen mit diesem Tutorial mitgeliefert. Wie er intern funktioniert, wird weiter unten im Abschnitt "Wie der Simulator funktioniert" erklärt.
-
-Der Simulator befindet sich unter `3_Application/Simulator_für_3_Application/`. Er liest eine GeoJSON-Datei und sendet die Punkte Schritt für Schritt über MQTT an den Broker.
+Den Simulator liegt im Repository unter (https://github.com/Y-Akinci/container-tracking-system) und ist bereits fertig. Er liest eine GeoJSON-Datei und sendet die Punkte Schritt für Schritt über MQTT an den Broker.
 
 Die Config-Datei `config-switch-grp4.ini` ist bereits im Ordner vorhanden. Die wichtigsten Werte darin:
 
